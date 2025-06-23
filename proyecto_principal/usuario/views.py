@@ -1,20 +1,18 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .models import Usuario
+from django.contrib.auth.models import User
 import random
 
 def login(request):
-    # Solución de emergencia: si el admin no existe, lo crea.
-    # Esto es para asegurar que la base de datos no esté vacía en producción.
-    if not Usuario.objects.filter(nombre_usuario='admin').exists():
-        admin_user = Usuario(nombre_usuario='admin', correo='admin@example.com')
-        admin_user.set_password('admin123')
-        admin_user.save()
+    # --- CÓDIGO TEMPORAL PARA CREAR SUPERUSUARIO ---
+    if not User.objects.filter(username='admin_django').exists():
+        User.objects.create_superuser('admin_django', 'admin@example.com', 'admin123')
+    # --- FIN DEL CÓDIGO TEMPORAL ---
 
     if request.session.get('usuario_id'):
         return redirect('main')  
@@ -28,7 +26,6 @@ def login(request):
         if usuario and usuario.check_password(clave):
             request.session['usuario_id'] = usuario.id_usuario
             request.session['usuario_nombre'] = usuario.nombre_usuario
-            request.session['correo_usuario'] = usuario.correo
             messages.success(request, 'Inicio de sesión exitoso')
             return redirect('main')  
         
