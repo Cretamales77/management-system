@@ -1,0 +1,139 @@
+{% extends 'home/base_main.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Editar Venta{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-pencil-square text-primary me-2"></i>Editar Venta #{{ venta.id_venta }}</h2>
+    <a href="{% url 'ventas' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver a ventas</a>
+  </div>
+  <div class="card shadow-lg rounded-4">
+    <div class="card-body p-4">
+      <form method="post">
+        {% csrf_token %}
+        <h4 class="fw-bold mb-3 text-primary"><i class="bi bi-box-seam me-2"></i>Productos vendidos</h4>
+        <div class="table-responsive mb-3">
+          <table class="table table-bordered align-middle text-center mb-0" id="tabla-productos-edit">
+            <thead class="table-light">
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Subtotal</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detalle in detalles %}
+              <tr class="producto-row" data-producto-id="{{ detalle.producto.id_producto }}">
+                <td>
+                  <span class="fw-semibold">{{ detalle.producto.nombre }}</span>
+                </td>
+                <td>
+                  <div class="input-group input-group-sm">
+                    <input type="number" name="cantidad_{{ detalle.id_detalle }}" value="{{ detalle.cantidad }}" min="0" class="form-control form-control-sm text-center" data-cantidad-original="{{ detalle.cantidad }}" required onkeydown="return false;" />
+                    <span class="input-group-text">unid.</span>
+                  </div>
+                  <div class="reembolso-info mt-1 small text-warning d-none">
+                    <i class="bi bi-arrow-return-left"></i> 
+                    <span class="cantidad-reembolso"></span> unidades a reembolsar
+                  </div>
+                </td>
+                <td class="precio-unitario" data-precio="{{ detalle.precio_unitario }}">${{ detalle.precio_unitario|floatformat:0|intcomma }}</td>
+                <td class="subtotal">${{ detalle.subtotal|floatformat:0|intcomma }}</td>
+                <td>
+                  <span class="badge {% if detalle.estado == 'Completado' %}bg-success{% elif detalle.estado == 'Parcialmente Reembolsado' %}bg-warning{% else %}bg-danger{% endif %}">
+                    {{ detalle.estado }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="3" class="text-end">Total venta:</th>
+                <th colspan="2" id="total-venta">${{ venta.total_venta|floatformat:0|intcomma }}</th>
+              </tr>
+              <tr class="table-warning">
+                <th colspan="3" class="text-end">Total a reembolsar:</th>
+                <th colspan="2" id="total-reembolso">$0.00</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="row g-3 align-items-end mb-0">
+          <div class="col-md-10">
+            <label for="observaciones" class="form-label fw-semibold">Observaciones:</label>
+            <textarea name="observaciones" id="observaciones" class="form-control" rows="2">{{ venta.observaciones }}</textarea>
+          </div>
+          <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-warning fw-bold"><i class="bi bi-save me-2"></i>Guardar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Función para actualizar el badge de reembolso y subtotales
+  function actualizarReembolso(input) {
+    const row = input.closest('tr');
+    const cantidadOriginal = parseInt(input.getAttribute('data-cantidad-original') || input.value);
+    const cantidadNueva = parseInt(input.value);
+    const precio = parseFloat(row.querySelector('.precio-unitario').getAttribute('data-precio')) || 0;
+    const badge = row.querySelector('.reembolso-info');
+    const cantidadReembolso = row.querySelector('.cantidad-reembolso');
+    
+    if (cantidadNueva < cantidadOriginal) {
+      const diferencia = cantidadOriginal - cantidadNueva;
+      badge.classList.remove('d-none');
+      cantidadReembolso.textContent = diferencia;
+      row.classList.add('table-warning');
+    } else {
+      badge.classList.add('d-none');
+      row.classList.remove('table-warning');
+    }
+    
+    // Actualizar totales
+    actualizarTotales();
+  }
+  
+  // Función para actualizar totales
+  function actualizarTotales() {
+    let totalVenta = 0;
+    let totalReembolso = 0;
+    
+    document.querySelectorAll('.producto-row').forEach(row => {
+      const input = row.querySelector('input[name*="cantidad"]');
+      const cantidadOriginal = parseInt(input.getAttribute('data-cantidad-original')) || 0;
+      const cantidadActual = parseInt(input.value) || 0;
+      const precio = parseFloat(row.querySelector('.precio-unitario').getAttribute('data-precio')) || 0;
+      const diferencia = cantidadOriginal - cantidadActual;
+      totalVenta += cantidadActual * precio;
+      if (diferencia > 0) {
+        totalReembolso += diferencia * precio;
+      }
+    });
+    
+    document.getElementById('total-venta').textContent = `$${totalVenta.toLocaleString('es-CL', {maximumFractionDigits: 0})}`;
+    document.getElementById('total-reembolso').textContent = `$${totalReembolso.toLocaleString('es-CL', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+  }
+  
+  // Event listeners para inputs de cantidad
+  document.querySelectorAll('input[name*="cantidad"]').forEach(input => {
+    input.setAttribute('data-cantidad-original', input.value);
+    input.addEventListener('change', function() {
+      actualizarReembolso(this);
+    });
+  });
+  
+  // Inicializar totales
+  actualizarTotales();
+});
+</script>
+{% endblock %} 

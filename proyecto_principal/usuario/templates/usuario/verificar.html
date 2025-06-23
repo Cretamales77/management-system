@@ -1,0 +1,27 @@
+{% extends "usuario/base_login.html" %}
+
+{% block title %}Verificar Código{% endblock %}
+
+{% block heading %}Verificar Código{% endblock %}
+
+{% block form_fields %}
+  <p>Ingresa el código enviado a tu correo electrónico.</p>
+
+  <div class="mb-3">
+    <label for="codigo" class="form-label">Código de Verificación</label>
+    <input
+      type="text"
+      id="codigo"
+      name="codigo"
+      class="form-control"
+      placeholder="Ingresa el código"
+      required
+      maxlength="6"
+      autocomplete="one-time-code"
+      autofocus
+      aria-describedby="codigoHelp"
+    />
+  </div>
+{% endblock %}
+
+{% block button_text %}Verificar{% endblock %}

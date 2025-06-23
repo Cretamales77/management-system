@@ -1,0 +1,142 @@
+{% extends 'home/base_main.html' %}
+
+{% block title %}Reembolso de Compra - Inventario{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Reembolso de Compra #{{ compra.id_compra }}</h2>
+        <a href="{% url 'detalle_compra' compra.id_compra %}" class="btn btn-primary">
+          <i class="bi bi-arrow-left"></i> Volver
+        </a>
+      </div>
+
+      <!-- Información de la compra -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Información de la Compra</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Proveedor:</strong> {{ compra.proveedor.nombre }}</p>
+              <p><strong>Fecha:</strong> {{ compra.fecha|date:"d/m/Y H:i" }}</p>
+              <p><strong>Total Original:</strong> ${{ compra.total_compra|floatformat:2 }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Estado:</strong> 
+                <span class="badge {% if compra.estado == 'COMPLETADA' %}bg-success{% elif compra.estado == 'REEMBOLSADA' %}bg-warning{% elif compra.estado == 'PARCIALMENTE_REEMBOLSADA' %}bg-info{% else %}bg-danger{% endif %}">
+                  {{ compra.estado }}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de reembolso -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Seleccionar Productos para Reembolso</h5>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-center">Cantidad Original</th>
+                    <th class="text-center">Precio Compra</th>
+                    <th class="text-center">Cantidad a Reembolsar</th>
+                    <th class="text-center">Monto Reembolso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for detalle in detalles %}
+                  <tr>
+                    <td>{{ detalle.producto.nombre }} ({{ detalle.producto.marca }})</td>
+                    <td class="text-center">{{ detalle.cantidad }}</td>
+                    <td class="text-center">${{ detalle.precio_compra|floatformat:2 }}</td>
+                    <td class="text-center">
+                      <input type="number" 
+                             name="cantidad_reembolso_{{ detalle.id_detalle }}" 
+                             class="form-control cantidad-reembolso" 
+                             min="0" 
+                             max="{{ detalle.cantidad }}" 
+                             value="0"
+                             data-precio="{{ detalle.precio_compra }}"
+                             onchange="calcularMontoReembolso(this)">
+                    </td>
+                    <td class="text-center monto-reembolso">$0.00</td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center">No hay productos en esta compra.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot class="table-dark">
+                  <tr>
+                    <td colspan="4" class="text-end"><strong>Total Reembolso:</strong></td>
+                    <td class="text-center"><strong id="total-reembolso">$0.00</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div class="mb-3">
+              <label for="observaciones" class="form-label">Observaciones del Reembolso:</label>
+              <textarea name="observaciones" id="observaciones" class="form-control" rows="3" placeholder="Motivo del reembolso..."></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Procesar Reembolso
+              </button>
+              <a href="{% url 'detalle_compra' compra.id_compra %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function calcularMontoReembolso(input) {
+  const cantidad = parseInt(input.value) || 0;
+  const precio = parseFloat(input.dataset.precio);
+  const monto = cantidad * precio;
+  
+  // Actualizar el monto en la fila
+  const row = input.closest('tr');
+  const montoCell = row.querySelector('.monto-reembolso');
+  montoCell.textContent = `$${monto.toFixed(2)}`;
+  
+  // Calcular total
+  calcularTotalReembolso();
+}
+
+function calcularTotalReembolso() {
+  let total = 0;
+  const montos = document.querySelectorAll('.monto-reembolso');
+  
+  montos.forEach(monto => {
+    const valor = parseFloat(monto.textContent.replace('$', '')) || 0;
+    total += valor;
+  });
+  
+  document.getElementById('total-reembolso').textContent = `$${total.toFixed(2)}`;
+}
+
+// Inicializar cálculo
+document.addEventListener('DOMContentLoaded', function() {
+  calcularTotalReembolso();
+});
+</script>
+{% endblock %} 

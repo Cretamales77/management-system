@@ -1,0 +1,234 @@
+{% extends 'home/base_main.html' %}
+{% load static %}
+
+{% block title %}Proveedores - Inventario{% endblock %}
+
+{% block content %}
+<h1>Proveedores</h1>
+
+<div class="action-bar d-flex align-items-center gap-2 mb-3">
+  <button
+    type="button"
+    class="btn btn-primary"
+    id="addProveedorBtn"
+    data-bs-toggle="modal"
+    data-bs-target="#addProveedorModal"
+    title="Agregar proveedor"
+  >
+    <i class="bi bi-plus-circle"></i>
+  </button>
+
+  <input
+    type="text"
+    class="form-control"
+    placeholder="Buscar proveedor..."
+    id="searchProveedores"
+    style="max-width: 300px;"
+  />
+</div>
+
+{% if proveedores %}
+<div class="table-responsive">
+  <table class="table datatable table-bordered table-striped table-hover align-middle text-center">
+    <thead class="table-dark">
+      <tr>
+        <th class="text-center">Nombre</th>
+        <th class="text-center">Teléfono</th>
+        <th class="text-center">Correo</th>
+        <th class="text-center">Dirección</th>
+        <th class="text-center">País</th>
+        <th class="text-center">Ciudad</th>
+        <th class="text-center">Comuna</th>
+        <th class="text-center">Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaProveedoresBody">
+      {% for proveedor in proveedores %}
+      <tr>
+        <td class="align-middle">{{ proveedor.nombre }}</td>
+        <td class="align-middle">
+          {% if proveedor.telefono|length == 9 %}
+            +56 9 {{ proveedor.telefono|slice:"1:5" }} {{ proveedor.telefono|slice:"5:" }}
+          {% else %}
+            {{ proveedor.telefono }}
+          {% endif %}
+        </td>
+        <td class="align-middle">{{ proveedor.correo }}</td>
+        <td class="align-middle">{{ proveedor.direccion }}</td>
+        <td class="align-middle">{{ proveedor.pais }}</td>
+        <td class="align-middle">{{ proveedor.ciudad }}</td>
+        <td class="align-middle">{{ proveedor.comuna }}</td>
+        <td class="align-middle">
+          <div class="btn-group" role="group" aria-label="Acciones proveedor">
+            <button
+              type="button"
+              class="btn btn-warning btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#editProveedorModal"
+              data-id="{{ proveedor.id_proveedor }}"
+              data-nombre="{{ proveedor.nombre|escapejs }}"
+              data-telefono="{{ proveedor.telefono|default:''|escapejs }}"
+              data-correo="{{ proveedor.correo|default:''|escapejs }}"
+              data-direccion="{{ proveedor.direccion|default:''|escapejs }}"
+              data-pais="{{ proveedor.pais|default:''|escapejs }}"
+              data-ciudad="{{ proveedor.ciudad|default:''|escapejs }}"
+              data-comuna="{{ proveedor.comuna|default:''|escapejs }}"
+              title="Editar proveedor"
+            >
+              <i class="bi bi-pencil"></i>
+            </button>
+
+            <a href="{% url 'proveedor_producto' proveedor.id_proveedor %}" class="btn btn-info btn-sm" title="Ver productos">
+              <i class="bi bi-box-seam"></i>
+            </a>
+
+            <button
+              type="button"
+              class="btn btn-danger btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#deleteProveedorModal"
+              data-id="{{ proveedor.id_proveedor }}"
+              data-nombre="{{ proveedor.nombre|escapejs }}"
+              title="Eliminar proveedor"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="alert alert-info mt-3">No hay proveedores registrados.</div>
+{% endif %}
+
+
+<!-- Modal Agregar Proveedor -->
+<div class="modal fade" id="addProveedorModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <form method="post" action="{% url 'agregar_proveedor' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white rounded-top-4">
+          <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i> Añadir Proveedor</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body px-4 py-3">
+          <div class="mb-3">
+            <label for="add-nombre" class="form-label fw-semibold">Nombre</label>
+            <input type="text" id="add-nombre" name="nombre" class="form-control rounded-pill px-3" required />
+          </div>
+          <div class="mb-3">
+            <label for="add-telefono" class="form-label fw-semibold">Teléfono</label>
+            <input type="text" id="add-telefono" name="telefono" class="form-control rounded-pill px-3" placeholder="912345678" />
+          </div>
+          <div class="mb-3">
+            <label for="add-correo" class="form-label fw-semibold">Correo</label>
+            <input type="email" id="add-correo" name="correo" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="add-direccion" class="form-label fw-semibold">Dirección</label>
+            <input type="text" id="add-direccion" name="direccion" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="add-pais" class="form-label fw-semibold">País</label>
+            <input type="text" id="add-pais" name="pais" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="add-ciudad" class="form-label fw-semibold">Ciudad</label>
+            <input type="text" id="add-ciudad" name="ciudad" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="add-comuna" class="form-label fw-semibold">Comuna</label>
+            <input type="text" id="add-comuna" name="comuna" class="form-control rounded-pill px-3" />
+          </div>
+        </div>
+        <div class="modal-footer px-4 pb-4">
+          <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Guardar</button>
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Proveedor -->
+<div class="modal fade" id="editProveedorModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <form method="post" id="editProveedorForm">
+        {% csrf_token %}
+        <div class="modal-header bg-warning text-dark rounded-top-4">
+          <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-2"></i> Editar Proveedor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body px-4 py-3">
+          <input type="hidden" name="id" id="edit-id" />
+          <div class="mb-3">
+            <label for="edit-nombre" class="form-label fw-semibold">Nombre</label>
+            <input type="text" id="edit-nombre" name="nombre" class="form-control rounded-pill px-3" required />
+          </div>
+          <div class="mb-3">
+            <label for="edit-telefono" class="form-label fw-semibold">Teléfono</label>
+            <input type="text" id="edit-telefono" name="telefono" class="form-control rounded-pill px-3" placeholder="912345678" />
+          </div>
+          <div class="mb-3">
+            <label for="edit-correo" class="form-label fw-semibold">Correo</label>
+            <input type="email" id="edit-correo" name="correo" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="edit-direccion" class="form-label fw-semibold">Dirección</label>
+            <input type="text" id="edit-direccion" name="direccion" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="edit-pais" class="form-label fw-semibold">País</label>
+            <input type="text" id="edit-pais" name="pais" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="edit-ciudad" class="form-label fw-semibold">Ciudad</label>
+            <input type="text" id="edit-ciudad" name="ciudad" class="form-control rounded-pill px-3" />
+          </div>
+          <div class="mb-3">
+            <label for="edit-comuna" class="form-label fw-semibold">Comuna</label>
+            <input type="text" id="edit-comuna" name="comuna" class="form-control rounded-pill px-3" />
+          </div>
+        </div>
+        <div class="modal-footer px-4 pb-4">
+          <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold">Guardar</button>
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Eliminar Proveedor -->
+<div class="modal fade" id="deleteProveedorModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <form method="post" id="deleteProveedorForm">
+        {% csrf_token %}
+        <div class="modal-header bg-danger text-white rounded-top-4">
+          <h5 class="modal-title fw-bold"><i class="bi bi-trash me-2"></i> Eliminar Proveedor</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body px-4 py-3">
+          <input type="hidden" name="id" id="delete-id" />
+          <p>¿Estás seguro que deseas eliminar al proveedor <strong id="delete-nombre"></strong>?</p>
+        </div>
+        <div class="modal-footer px-4 pb-4">
+          <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">Eliminar</button>
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'proveedor/js/proveedores.js' %}"></script>
+{% endblock %}
+

@@ -1,0 +1,772 @@
+{% extends 'home/base_main.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Ventas - Inventario{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-cart-check me-2"></i>Ventas</h3>
+    <div>
+      <a href="{% url 'listar_reembolsos' %}" class="btn btn-outline-primary me-2"><i class="bi bi-arrow-return-left"></i> Ver reembolsos</a>
+      <a href="{% url 'configurar_boleta' %}" class="btn btn-outline-info"><i class="bi bi-gear"></i> Configurar formato de boleta</a>
+    </div>
+  </div>
+
+  <!-- Botones para añadir al carrito -->
+  <div class="d-flex justify-content-center mb-4">
+    <button type="button" class="btn btn-elegante me-3" data-bs-toggle="modal" data-bs-target="#scanCodeModal" title="Escanear código">
+      <i class="bi bi-upc-scan me-2"></i>Escanear Código
+    </button>
+    <button type="button" class="btn btn-elegante" data-bs-toggle="modal" data-bs-target="#addManualModal" title="Agregar manualmente">
+      <i class="bi bi-plus-circle me-2"></i>Agregar Manualmente
+    </button>
+  </div>
+
+  <!-- Carrito de Venta (Prioritario) -->
+  <div class="card shadow-lg border-0 mb-4">
+    <div class="card-header bg-gradient text-white fw-bold" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);">
+      Carrito de Venta
+    </div>
+    <div class="card-body">
+      {% if carrito %}
+        <div class="table-responsive mb-3">
+          <table class="table table-bordered align-middle text-center">
+            <thead class="table-light">
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Precio unitario</th>
+                <th>Subtotal</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in carrito %}
+              <tr>
+                <td>{{ item.producto.nombre }}</td>
+                <td>
+                  <form method="post" action="{% url 'editar_carrito' item.producto.id_producto %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" style="width: 60px;" class="form-control d-inline-block carrito-cantidad-input" required onchange="this.form.submit()" />
+                  </form>
+                </td>
+                <td>${{ item.producto.precio_unitario|floatformat:0|intcomma }}</td>
+                <td>${{ item.subtotal|floatformat:0|intcomma }}</td>
+                <td>
+                  <form method="post" action="{% url 'eliminar_de_carrito' item.producto.id_producto %}" class="d-inline ms-1">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="3" class="text-end">Total</th>
+                <th colspan="2">${{ total_carrito|floatformat:0|intcomma }}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <form method="post" action="{% url 'finalizar_venta' %}">
+          {% csrf_token %}
+          <div class="mb-3" style="max-width: 500px;">
+            <label for="observaciones" class="form-label fw-semibold">Observaciones (opcional):</label>
+            <textarea name="observaciones" id="observaciones" class="form-control" rows="2" placeholder="Agrega una nota para esta venta..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-success px-4 fw-bold">
+            <i class="bi bi-cart-check me-2"></i>Finalizar Venta
+          </button>
+        </form>
+      {% else %}
+        <div class="alert alert-info mb-0">El carrito está vacío. Agrega productos para iniciar una venta.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Modal Agregar Manualmente -->
+  <div class="modal fade" id="addManualModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <form method="post" action="{% url 'agregar_a_carrito' %}" class="row g-3" autocomplete="off">
+          {% csrf_token %}
+          <div class="modal-header bg-gradient text-white rounded-top-4" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);">
+            <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i> Agregar Producto al Carrito</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body px-4 py-3">
+            <div class="mb-3">
+              <label for="categoria_filtro" class="form-label fw-semibold">Categoría</label>
+              <select id="categoria_filtro" class="form-select rounded-pill px-3">
+                <option value="">Todas las categorías</option>
+                {% for categoria in categorias %}
+                  <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="producto_autocomplete" class="form-label fw-semibold">Producto</label>
+              <input type="text" id="producto_autocomplete" class="form-control rounded-pill px-3" placeholder="Buscar por nombre o código..." autocomplete="off" required />
+              <input type="hidden" name="producto_id" id="producto_id_hidden" />
+              <div id="autocomplete_suggestions" class="list-group position-absolute w-100" style="z-index: 10;"></div>
+            </div>
+            <div class="mb-3">
+              <label for="cantidad" class="form-label fw-semibold">Cantidad</label>
+              <input type="number" name="cantidad" id="cantidad" class="form-control rounded-pill px-3" min="1" value="1" required />
+            </div>
+            <div id="addManualErrorMsg" class="d-none text-center mt-3 text-danger fw-semibold"></div>
+          </div>
+          <div class="modal-footer px-4 pb-4">
+            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); border: none;">
+              <i class="bi bi-plus-circle me-2"></i>Agregar al Carrito
+            </button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de Ventas Agrupadas (Acordeón) -->
+  <div class="card shadow-lg border-0 mb-4">
+    <div class="card-header bg-gradient text-white fw-bold" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);">
+      Historial de Ventas
+    </div>
+    <div class="card-body">
+      <form method="get" class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3" style="font-size: 1.15rem;">
+        <label class="mb-0">Mostrar
+          <select name="mostrar" class="form-select d-inline-block w-auto mx-1" onchange="this.form.submit()">
+            <option value="5" {% if mostrar == 5 %}selected{% endif %}>5</option>
+            <option value="10" {% if mostrar == 10 %}selected{% endif %}>10</option>
+            <option value="20" {% if mostrar == 20 %}selected{% endif %}>20</option>
+            <option value="50" {% if mostrar == 50 %}selected{% endif %}>50</option>
+          </select>
+          registros
+        </label>
+        <label class="mb-0">Ordenar:
+          <select name="orden" class="form-select d-inline-block w-auto mx-1" onchange="this.form.submit()">
+            <option value="desc" {% if orden == 'desc' %}selected{% endif %}>Más recientes</option>
+            <option value="asc" {% if orden == 'asc' %}selected{% endif %}>Más antiguas</option>
+          </select>
+        </label>
+        {% if page_obj.number > 1 %}
+          <input type="hidden" name="page" value="{{ page_obj.number }}">
+        {% endif %}
+      </form>
+      {% if ventas_con_detalles %}
+        <div class="accordion" id="ventasAccordion">
+          {% for grupo in ventas_con_detalles %}
+          <div class="accordion-item mb-2">
+            <h2 class="accordion-header" id="heading{{ grupo.venta.id_venta }}">
+              <div class="d-flex align-items-center justify-content-between w-100">
+                <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ grupo.venta.id_venta }}" aria-expanded="false" aria-controls="collapse{{ grupo.venta.id_venta }}">
+                  <span class="fw-bold"><i class="bi bi-receipt"></i>Venta #{{ grupo.venta.id_venta }}</span>
+                  <span class="me-3"><i class="bi bi-calendar3"></i> {{ grupo.venta.fecha|date:'d/m/Y' }}</span>
+                  <span class="me-3"><i class="bi bi-cash-coin"></i> ${{ grupo.total_venta|floatformat:0|intcomma }}</span>
+                  <span class="obs-label"><i class="bi bi-chat-left-text"></i> Observaciones: {{ grupo.venta.observaciones|default:'-' }}</span>
+                </button>
+                <div class="ms-2 d-flex gap-0">
+                  <a href="{% url 'editar_venta' grupo.venta.id_venta %}" class="btn btn-warning btn-xs d-inline-flex align-items-center justify-content-center px-2 py-1 me-1" title="Reembolsar venta">
+                    <i class="bi bi-arrow-return-left"></i>
+                  </a>
+                  <a href="{% url 'boleta_venta' grupo.venta.id_venta %}" class="btn btn-info btn-xs d-inline-flex align-items-center justify-content-center px-2 py-1 me-1 boleta-link" title="Descargar boleta" target="_blank">
+                    <i class="bi bi-receipt"></i> Boleta
+                  </a>
+                  <button type="button" class="btn btn-danger btn-xs d-inline-flex align-items-center justify-content-center px-2 py-1" title="Eliminar venta" data-bs-toggle="modal" data-bs-target="#deleteVentaModal" data-id="{{ grupo.venta.id_venta }}">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </h2>
+            <div id="collapse{{ grupo.venta.id_venta }}" class="accordion-collapse collapse" aria-labelledby="heading{{ grupo.venta.id_venta }}" data-bs-parent="#ventasAccordion">
+              <div class="accordion-body">
+                <div class="table-responsive">
+                  <table class="table table-bordered align-middle text-center mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio unitario</th>
+                        <th>Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for detalle in grupo.detalles %}
+                      <tr>
+                        <td>{{ detalle.producto.nombre }}</td>
+                        <td>{{ detalle.cantidad }}</td>
+                        <td>${{ detalle.precio_unitario|floatformat:0|intcomma }}</td>
+                        <td>${{ detalle.subtotal|floatformat:0|intcomma }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th colspan="3" class="text-end">Total</th>
+                        <th>${{ grupo.total_venta|floatformat:0|intcomma }}</th>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <!-- Controles de paginación -->
+        <nav aria-label="Paginación de ventas" class="mt-4">
+          <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link rounded-pill" href="?page=1" aria-label="Primera página">
+                  <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link rounded-pill" href="?page={{ page_obj.previous_page_number }}" aria-label="Página anterior">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link rounded-pill">&laquo;&laquo;</span>
+              </li>
+              <li class="page-item disabled">
+                <span class="page-link rounded-pill">&laquo;</span>
+              </li>
+            {% endif %}
+
+            {% for num in paginator.page_range %}
+              {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                {% if page_obj.number == num %}
+                  <li class="page-item active" aria-current="page">
+                    <span class="page-link rounded-pill">{{ num }}</span>
+                  </li>
+                {% else %}
+                  <li class="page-item">
+                    <a class="page-link rounded-pill" href="?page={{ num }}">{{ num }}</a>
+                  </li>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link rounded-pill" href="?page={{ page_obj.next_page_number }}" aria-label="Página siguiente">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+              <li class="page-item">
+                <a class="page-link rounded-pill" href="?page={{ paginator.num_pages }}" aria-label="Última página">
+                  <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link rounded-pill">&raquo;</span>
+              </li>
+              <li class="page-item disabled">
+                <span class="page-link rounded-pill">&raquo;&raquo;</span>
+              </li>
+            {% endif %}
+          </ul>
+          <div class="text-center text-muted small mt-2">
+            Página {{ page_obj.number }} de {{ paginator.num_pages }}
+          </div>
+        </nav>
+      {% else %}
+        <div class="alert alert-info mb-0">No hay ventas registradas.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Modal Escaneo Código -->
+  <div class="modal fade" id="scanCodeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header bg-gradient text-white rounded-top-4" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);">
+          <h5 class="modal-title fw-bold"><i class="bi bi-upc-scan me-2"></i> Escanea código</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body d-flex flex-column align-items-center justify-content-center py-4 position-relative">
+          <i class="bi bi-upc-scan" style="font-size: 6rem; color: #6a11cb;"></i>
+          <p class="mt-3 text-center fs-5">Escanea el código con la pistola o dispositivo.</p>
+          <input type="text" id="scanCodeInput" autocomplete="off" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;" />
+          <div id="scanErrorMsg" class="d-none text-center mt-3 text-danger fw-semibold"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Eliminar Venta -->
+  <div class="modal fade" id="deleteVentaModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <form method="post" action="{% url 'eliminar_venta' 0 %}" id="deleteVentaForm">
+          {% csrf_token %}
+          <div class="modal-header bg-danger text-white rounded-top-4">
+            <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body px-4 py-3">
+            <p class="mb-0">¿Estás seguro que deseas eliminar la venta <span id="delete-producto" class="fw-bold"></span>?</p>
+            <p class="text-danger mt-2 mb-0"><i class="bi bi-exclamation-circle me-1"></i>Esta acción no se puede deshacer.</p>
+          </div>
+          <div class="modal-footer px-4 pb-4">
+            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">Eliminar</button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Editar Venta -->
+  <div class="modal fade" id="editVentaModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <form id="editVentaForm">
+          <div class="modal-header bg-warning text-dark rounded-top-4">
+            <h5 class="modal-title fw-bold"><i class="bi bi-pencil me-2"></i> Editar Venta</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body px-4 py-3">
+            <input type="hidden" name="id" id="edit-id" />
+            <div id="edit-productos-list"></div>
+            <div class="mb-3">
+              <label for="edit-observaciones" class="form-label fw-semibold">Observaciones</label>
+              <textarea id="edit-observaciones" name="observaciones" class="form-control rounded-3 px-3"></textarea>
+            </div>
+            <div id="editVentaErrorMsg" class="d-none text-danger fw-semibold mb-2"></div>
+          </div>
+          <div class="modal-footer px-4 pb-4">
+            <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold">Guardar</button>
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Mejora visual para los registros de ventas */
+.accordion-item {
+  border-radius: 18px !important;
+  box-shadow: 0 2px 10px 0 rgba(106,17,203,0.07), 0 1.5px 4px 0 rgba(37,117,252,0.06);
+  margin-bottom: 12px;
+  border: none;
+  overflow: hidden;
+  background: #f8fafd;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.accordion-item:nth-child(even) {
+  background: #f3f6fb;
+}
+.accordion-item:hover {
+  box-shadow: 0 4px 18px 0 rgba(106,17,203,0.13), 0 2.5px 8px 0 rgba(37,117,252,0.10);
+  background: #eef3fa;
+}
+.accordion-button {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2d2d2d;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 1.1rem 1.5rem;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+.accordion-button:not(.collapsed) {
+  background: linear-gradient(90deg, #6a11cb11 0%, #2575fc11 100%);
+  color: #6a11cb;
+}
+.accordion-header {
+  border-bottom: 1px solid #e0e7ef;
+}
+
+/* Remarcar el número de venta */
+.accordion-button .fw-bold {
+  color: #6a11cb;
+  font-size: 1.18rem;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+}
+.accordion-button .bi-receipt {
+  font-size: 1.3rem;
+  margin-right: 0.5rem;
+  color: #2575fc;
+}
+
+/* Observaciones separadas visualmente */
+.accordion-button .obs-label {
+  color: #888;
+  font-weight: 500;
+  margin-left: 1.5rem;
+  font-size: 1rem;
+  border-left: 2px solid #e0e7ef;
+  padding-left: 1rem;
+}
+
+/* Mejorar la tabla de detalles */
+.accordion-body .table {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px 0 rgba(106,17,203,0.06);
+}
+
+/* Animación suave al expandir/cerrar */
+.accordion-collapse {
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Responsive para móviles */
+@media (max-width: 600px) {
+  .accordion-button {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    font-size: 1rem;
+    padding: 0.8rem 0.7rem;
+  }
+  .accordion-button .obs-label {
+    margin-left: 0;
+    border-left: none;
+    padding-left: 0;
+    font-size: 0.95rem;
+  }
+}
+
+/* Remarcar fuertemente el input de cantidad en el carrito */
+.carrito-cantidad-input {
+  border: 2px solid #6a11cb !important;
+  background: #f3f6fb !important;
+  box-shadow: 0 0 0 2px #e0e7ef;
+  font-weight: bold;
+  color: #2d2d2d;
+  text-align: center;
+  border-radius: 6px;
+  font-size: 1rem;
+  padding: 2px 0 2px 0;
+  height: 38px;
+  width: 48px !important;
+  margin: 0 auto;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.carrito-cantidad-input:focus {
+  border-color: #2575fc !important;
+  box-shadow: 0 0 0 3px #b3d1ff;
+  background: #fff !important;
+}
+
+.btn-elegante {
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: #fff !important;
+  border: none;
+  border-radius: 2rem;
+  box-shadow: 0 4px 16px rgba(106,17,203,0.10), 0 1.5px 6px rgba(37,117,252,0.10);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.45rem 1.3rem;
+  transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+}
+.btn-elegante:hover, .btn-elegante:focus {
+  background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+  box-shadow: 0 8px 24px rgba(37,117,252,0.18), 0 2px 8px rgba(106,17,203,0.12);
+  transform: translateY(-2px) scale(1.04);
+  color: #fff !important;
+}
+.btn-elegante i {
+  font-size: 1.1rem;
+  vertical-align: middle;
+}
+</style>
+
+<script>
+// Animación de ícono acordeón
+window.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.accordion-button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      setTimeout(() => {
+        btn.blur();
+      }, 300);
+    });
+  });
+});
+</script>
+
+<script>
+// Script para el escaneo de códigos
+(function() {
+  const scanCodeModalEl = document.getElementById('scanCodeModal');
+  const scanCodeInput = document.getElementById('scanCodeInput');
+  const scanErrorMsg = document.getElementById('scanErrorMsg');
+  let scanTimeout = null;
+
+  function showError(message) {
+    scanErrorMsg.innerHTML = message;
+    scanErrorMsg.classList.remove('d-none');
+  }
+
+  function clearError() {
+    scanErrorMsg.innerHTML = '';
+    scanErrorMsg.classList.add('d-none');
+  }
+
+  scanCodeModalEl.addEventListener('shown.bs.modal', () => {
+    scanCodeInput.value = '';
+    clearError();
+    scanCodeInput.focus();
+  });
+
+  scanCodeInput.addEventListener('keydown', function(event) {
+    if(event.key === 'Enter') {
+      event.preventDefault();
+      const codigo = this.value.trim();
+      if(codigo === '') return;
+
+      // Limpiar timeout anterior si existe
+      if (scanTimeout) {
+        clearTimeout(scanTimeout);
+      }
+
+      // Validar el código
+      fetch("{% url 'validar_codigo' %}?codigo=" + encodeURIComponent(codigo))
+        .then(response => response.json())
+        .then(data => {
+          if(!data.existe) {
+            showError(`⚠️ No se encontró el código "<strong>${codigo}</strong>".`);
+            scanCodeInput.value = '';
+            scanCodeInput.focus();
+          } else {
+            // Código existe, cerrar modal escaneo y abrir modal agregar producto
+            const scanModalInstance = bootstrap.Modal.getInstance(scanCodeModalEl);
+            scanModalInstance.hide();
+
+            // Abrir modal de agregar producto
+            const addManualModal = new bootstrap.Modal(document.getElementById('addManualModal'));
+            addManualModal.show();
+
+            // Poner código en el input de producto y poner foco
+            const productoInput = document.getElementById('producto_autocomplete');
+            if(productoInput) {
+              productoInput.value = codigo;
+              productoInput.focus();
+              // Disparar el evento input para activar la búsqueda
+              productoInput.dispatchEvent(new Event('input'));
+            }
+          }
+        })
+        .catch(() => {
+          showError('⚠️ Error al validar el código. Intente nuevamente.');
+          scanCodeInput.value = '';
+          scanCodeInput.focus();
+        });
+    }
+  });
+
+  // Limpiar el input después de un tiempo si no se completó el escaneo
+  scanCodeInput.addEventListener('input', function() {
+    if (scanTimeout) {
+      clearTimeout(scanTimeout);
+    }
+    scanTimeout = setTimeout(() => {
+      this.value = '';
+    }, 1000);
+  });
+
+  // Limpiar error al cerrar el modal
+  scanCodeModalEl.addEventListener('hidden.bs.modal', () => {
+    clearError();
+    scanCodeInput.value = '';
+  });
+})();
+</script>
+
+<script>
+  document.getElementById('btnAgregarManual').addEventListener('click', () => {
+    // Ocultar modal de escaneo
+    const scanModalEl = document.getElementById('scanCodeModal');
+    const scanModal = bootstrap.Modal.getInstance(scanModalEl);
+    scanModal.hide();
+
+    // Abrir modal de añadir venta
+    const addVentaModalEl = document.getElementById('addVentaModal');
+    const addVentaModal = new bootstrap.Modal(addVentaModalEl);
+    addVentaModal.show();
+  });
+</script>
+
+<script>
+(function() {
+  const input = document.getElementById('producto_autocomplete');
+  const suggestions = document.getElementById('autocomplete_suggestions');
+  const hiddenId = document.getElementById('producto_id_hidden');
+  const categoriaFiltro = document.getElementById('categoria_filtro');
+  const errorMsg = document.getElementById('addManualErrorMsg');
+  const form = document.querySelector('#addManualModal form');
+  let currentFocus = -1;
+  let productos = [];
+
+  function closeSuggestions() {
+    suggestions.innerHTML = '';
+    suggestions.style.display = 'none';
+    currentFocus = -1;
+  }
+
+  function showError(message) {
+    errorMsg.innerHTML = message;
+    errorMsg.classList.remove('d-none');
+  }
+
+  function clearError() {
+    errorMsg.innerHTML = '';
+    errorMsg.classList.add('d-none');
+  }
+
+  function renderSuggestions(items) {
+    suggestions.innerHTML = '';
+    if (!items.length) {
+      suggestions.style.display = 'none';
+      return;
+    }
+    items.forEach((item, idx) => {
+      const div = document.createElement('button');
+      div.type = 'button';
+      div.className = 'list-group-item list-group-item-action';
+      div.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>${item.nombre}</strong>
+            <br>
+            <small class="text-muted">Código: ${item.codigo}</small>
+          </div>
+          <span class="badge bg-primary rounded-pill">$${item.precio_venta}</span>
+        </div>
+      `;
+      div.onclick = function() {
+        input.value = item.nombre;
+        hiddenId.value = item.id;
+        closeSuggestions();
+        clearError();
+      };
+      suggestions.appendChild(div);
+    });
+    suggestions.style.display = 'block';
+  }
+
+  function fetchProductos() {
+    const q = input.value.trim();
+    const categoria = categoriaFiltro.value;
+    if (q.length === 0) {
+      closeSuggestions();
+      hiddenId.value = '';
+      return;
+    }
+    fetch(`{% url 'autocomplete_productos' %}?q=${encodeURIComponent(q)}${categoria ? '&categoria=' + encodeURIComponent(categoria) : ''}`)
+      .then(res => res.json())
+      .then(data => {
+        productos = data.results || [];
+        renderSuggestions(productos);
+        
+        if (productos.length === 1) {
+          hiddenId.value = productos[0].id;
+        } else {
+          hiddenId.value = '';
+        }
+      });
+  }
+
+  input.addEventListener('input', fetchProductos);
+  categoriaFiltro.addEventListener('change', fetchProductos);
+  input.addEventListener('focus', fetchProductos);
+
+  input.addEventListener('keydown', function(e) {
+    const items = suggestions.querySelectorAll('.list-group-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      currentFocus++;
+      if (currentFocus >= items.length) currentFocus = 0;
+      items.forEach((el, idx) => el.classList.toggle('active', idx === currentFocus));
+      e.preventDefault();
+    } else if (e.key === 'ArrowUp') {
+      currentFocus--;
+      if (currentFocus < 0) currentFocus = items.length - 1;
+      items.forEach((el, idx) => el.classList.toggle('active', idx === currentFocus));
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      if (currentFocus > -1 && items[currentFocus]) {
+        e.preventDefault();
+        items[currentFocus].click();
+      }
+      else if (productos.length === 1) {
+        e.preventDefault();
+        input.value = productos[0].nombre;
+        hiddenId.value = productos[0].id;
+        closeSuggestions();
+      }
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!suggestions.contains(e.target) && e.target !== input) {
+      closeSuggestions();
+    }
+  });
+
+  // Validar al enviar el formulario
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const productoInput = input.value.trim();
+    const cantidadInput = document.getElementById('cantidad').value.trim();
+    const cantidad = parseInt(cantidadInput);
+
+    if (!productoInput) {
+      showError('⚠️ Por favor, ingrese un producto.');
+      return;
+    }
+
+    if (!hiddenId.value) {
+      showError(`⚠️ No se encontró el producto "<strong>${productoInput}</strong>".`);
+      return;
+    }
+
+    if (isNaN(cantidad) || cantidad <= 0) {
+      showError('⚠️ Por favor, ingrese una cantidad válida.');
+      return;
+    }
+
+    // Si todo está bien, enviar el formulario
+    this.submit();
+  });
+
+  // Limpiar error al abrir el modal
+  const addManualModal = document.getElementById('addManualModal');
+  addManualModal.addEventListener('show.bs.modal', function() {
+    clearError();
+    input.value = '';
+    hiddenId.value = '';
+    closeSuggestions();
+  });
+})();
+</script>
+
+<script>
+document.querySelectorAll('.boleta-link').forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    // Abrir en nueva pestaña y volver el foco a la actual
+    setTimeout(function() {
+      window.focus();
+    }, 200);
+  });
+});
+</script>
+{% endblock %}

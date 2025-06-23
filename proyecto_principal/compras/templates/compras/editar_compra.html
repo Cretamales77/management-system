@@ -1,0 +1,55 @@
+{% extends 'home/base_main.html' %}
+
+{% block title %}Editar Compra - Inventario{% endblock %}
+
+{% block content %}
+<h2>Editar Compra #{{ compra.id_compra }}</h2>
+
+<form method="post" class="row g-3">
+  {% csrf_token %}
+
+  <div class="col-md-6">
+    <label for="producto" class="form-label">Producto:</label>
+    <select name="producto" id="producto" class="form-select" required>
+      {% for producto in productos %}
+      <option value="{{ producto.id_producto }}" {% if compra.id_producto.id_producto == producto.id_producto %}selected{% endif %}>
+        {{ producto.nombre }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-6">
+    <label for="proveedor" class="form-label">Proveedor:</label>
+    <select name="proveedor" id="proveedor" class="form-select" required>
+      {% for proveedor in proveedores %}
+      <option value="{{ proveedor.id_proveedor }}" {% if compra.id_proveedor.id_proveedor == proveedor.id_proveedor %}selected{% endif %}>
+        {{ proveedor.nombre }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-4">
+    <label for="cantidad" class="form-label">Cantidad:</label>
+    <input type="number" name="cantidad" id="cantidad" class="form-control" min="1" value="{{ compra.cantidad }}" required>
+  </div>
+
+  <div class="col-md-4">
+    <label for="precio_compra" class="form-label">Precio de compra:</label>
+    <input type="number" name="precio_compra" id="precio_compra" class="form-control" step="0.01" value="{{ compra.precio_compra }}" required>
+  </div>
+
+  <div class="col-12">
+    <label for="observaciones" class="form-label">Observaciones:</label>
+    <textarea name="observaciones" id="observaciones" class="form-control" rows="2">{{ compra.observaciones }}</textarea>
+  </div>
+
+  <div class="col-12">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save"></i> Actualizar
+    </button>
+    <a href="{% url 'lista_compras' %}" class="btn btn-secondary">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

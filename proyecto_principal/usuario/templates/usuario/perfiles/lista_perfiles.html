@@ -1,0 +1,281 @@
+{% extends 'home/base_main.html' %}
+{% load static %}
+
+{% block title %}Perfiles - Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <div class="icon-circle bg-primary bg-opacity-10">
+      <i class="bi bi-people-fill text-primary"></i>
+    </div>
+    <div>
+      <h1 class="h3 mb-1">Perfiles de Usuario</h1>
+      <p class="text-muted mb-0">Gestiona los perfiles de acceso al sistema</p>
+    </div>
+  </div>
+  <a href="{% url 'nuevo_perfil' %}" class="btn btn-primary d-inline-flex align-items-center gap-2">
+    <i class="bi bi-plus-circle"></i>
+    <span>Nuevo Perfil</span>
+  </a>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="input-group search-group">
+        <span class="input-group-text bg-light border-end-0">
+          <i class="bi bi-search text-primary"></i>
+        </span>
+        <input 
+          type="text" 
+          id="searchPerfiles" 
+          class="form-control border-start-0" 
+          placeholder="Buscar por nombre o correo..."
+        />
+      </div>
+      <div class="d-flex align-items-center gap-2 text-muted">
+        <i class="bi bi-info-circle"></i>
+        <small>Usa la búsqueda para filtrar perfiles</small>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table id="tablaPerfiles" class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="border-0">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person text-primary"></i>
+                <span>Nombre de Usuario</span>
+              </div>
+            </th>
+            <th class="border-0">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-envelope text-primary"></i>
+                <span>Correo Electrónico</span>
+              </div>
+            </th>
+            <th class="border-0 text-center">
+              <div class="d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-gear text-primary"></i>
+                <span>Acciones</span>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for usuario in usuarios %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-3">
+                <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
+                  {{ usuario.nombre_usuario|first|upper }}
+                </div>
+                <div>
+                  <div class="fw-medium">{{ usuario.nombre_usuario }}</div>
+                  <small class="text-muted">Usuario del sistema</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-envelope text-muted"></i>
+                <span>{{ usuario.correo|default:"-" }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <div class="btn-group">
+                <a href="{% url 'editar_perfil' usuario.id_usuario %}" 
+                   class="btn btn-light btn-sm d-inline-flex align-items-center justify-content-center" 
+                   title="Editar perfil"
+                   data-bs-toggle="tooltip">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <button type="button" 
+                        class="btn btn-light btn-sm d-inline-flex align-items-center justify-content-center" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#deleteModal{{ usuario.id_usuario }}"
+                        title="Eliminar perfil"
+                        data-bs-toggle="tooltip">
+                  <i class="bi bi-trash text-danger"></i>
+                </button>
+              </div>
+
+              <!-- Modal de confirmación de eliminación -->
+              <div class="modal fade" id="deleteModal{{ usuario.id_usuario }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content">
+                    <div class="modal-header border-0">
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="icon-circle bg-danger bg-opacity-10">
+                          <i class="bi bi-exclamation-triangle text-danger"></i>
+                        </div>
+                        <h5 class="modal-title">Confirmar Eliminación</h5>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p class="mb-0">¿Estás seguro que deseas eliminar el perfil de <strong>{{ usuario.nombre_usuario }}</strong>?</p>
+                      <p class="text-muted small mt-2">Esta acción no se puede deshacer.</p>
+                    </div>
+                    <div class="modal-footer border-0">
+                      <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                      <form action="{% url 'eliminar_perfil' usuario.id_usuario %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                          <i class="bi bi-trash me-2"></i>
+                          Eliminar
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="text-center py-5">
+              <div class="d-flex flex-column align-items-center text-muted">
+                <div class="icon-circle bg-light mb-3">
+                  <i class="bi bi-people" style="font-size: 1.5rem;"></i>
+                </div>
+                <p class="mb-1">No hay perfiles registrados</p>
+                <small>Crea un nuevo perfil para comenzar</small>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  $(document).ready(function () {
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Inicializar DataTable
+    $('#tablaPerfiles').DataTable({
+      language: {
+        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+      },
+      dom: 'lrtip',
+      pageLength: 5,
+      lengthMenu: [5, 10, 15, 25],
+      order: [[0, 'asc']],
+      columnDefs: [
+        { targets: -1, orderable: false }
+      ],
+      drawCallback: function() {
+        // Reinicializar tooltips después de cada redibujado
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      }
+    });
+
+    $('#searchPerfiles').on('keyup', function () {
+      $('#tablaPerfiles').DataTable().search(this.value).draw();
+    });
+  });
+</script>
+
+<style>
+  .icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-circle i {
+    font-size: 1.5rem;
+  }
+
+  .avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .search-group {
+    max-width: 400px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .search-group .input-group-text {
+    padding: 0.75rem 1rem;
+  }
+
+  .search-group .form-control {
+    padding: 0.75rem 1rem;
+  }
+
+  .search-group i {
+    font-size: 1.1rem;
+  }
+
+  .table > :not(caption) > * > * {
+    padding: 1rem;
+  }
+
+  .btn-group .btn {
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-group .btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn-group .btn i {
+    font-size: 1.1rem;
+  }
+
+  .modal-content {
+    border: none;
+    border-radius: 1rem;
+  }
+
+  .table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+  }
+
+  .table tbody tr {
+    transition: all 0.2s ease;
+  }
+
+  .table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+
+  .btn-primary {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .btn-primary i {
+    font-size: 1.1rem;
+  }
+</style>
+{% endblock %} 

@@ -1,0 +1,34 @@
+{% extends "usuario/base_login.html" %}
+
+{% block title %}Ingreso de correo para verificación{% endblock %}
+
+{% block heading %}Enviar Código de Verificación{% endblock %}
+
+{% block form_fields %}
+  <div class="alert alert-info py-2 px-3 mb-3" style="font-size:0.98rem; background:rgba(70,130,180,0.10); color:#4a90e2; border:1px solid #4a90e2;">
+    <i class="bi bi-envelope-paper me-2"></i>
+    Ingresa tu correo electrónico para recibir el código de verificación.
+  </div>
+  <div class="mb-3">
+    <label for="correo" class="form-label">Correo electrónico</label>
+    <input
+      type="email"
+      id="correo"
+      name="correo"
+      class="form-control"
+      placeholder="ejemplo@correo.com"
+      required
+      autocomplete="email"
+      autofocus
+      aria-describedby="correoHelp"
+      value="{{ request.POST.correo|default:'' }}"
+    />
+  </div>
+{% endblock %}
+
+{% block button_text %}<i class="bi bi-send"></i> Enviar Código{% endblock %}
+
+{% block bottom_text %}
+  <span class="d-block my-2" style="border-bottom: 1.5px solid #2c2f36; width: 60px; margin: 0 auto 1rem auto;"></span>
+  <a href="{% url 'login' %}" class="fw-semibold text-primary ms-1">Iniciar sesión</a>
+{% endblock %}

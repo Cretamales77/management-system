@@ -1,0 +1,16 @@
+/* Achicar botón */
+.toggle-password {
+  padding: 0.2rem 0.3rem;
+  width: 30px;
+  height: 30px;
+  font-size: 1.1rem;
+  border-radius: 0.375rem;
+}
+
+/* Achicar icono dentro del botón y moverlo un poco más arriba */
+.toggle-password i {
+  font-size: 1.1rem;
+  line-height: 1;
+  position: relative;
+  top: -2px; /* ajusta esta cifra para mover más o menos */
+}

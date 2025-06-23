@@ -1,0 +1,89 @@
+{% extends 'home/base_main.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Inicio - Inventario{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <h1>Últimos Movimientos</h1>
+
+    {% if movimientos %}
+    <div class="table-responsive">
+      <table class="table datatable table-bordered table-striped table-hover align-middle text-center">
+        <thead class="table-dark">
+          <tr>
+            <th class="text-center">Producto</th>
+            <th class="text-center">Tipo de Movimiento</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-center">Precio</th>
+            <th class="text-center">Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mov in movimientos %}
+          <tr>
+            <td class="text-center">{{ mov.nombre_producto }}</td>
+            <td class="text-center">
+              {% if mov.tipo == 'C' %}
+                Compra
+              {% elif mov.tipo == 'V' %}
+                Venta
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="text-center">{{ mov.cantidad }}</td>
+            <td class="text-center">${{ mov.precio_unitario|floatformat:0|intcomma }}</td>
+            <td class="text-center">{{ mov.fecha|date:"d/m/Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="alert alert-info mt-3 d-flex align-items-center gap-2">
+        <i class="bi bi-info-circle"></i> No hay movimientos recientes.
+      </div>
+    {% endif %}
+
+    {% if productos_bajo_stock %}
+    <!-- Modal de alerta de stock bajo -->
+    <div class="modal fade" id="modalStockBajo" tabindex="-1" aria-labelledby="stockBajoLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title" id="stockBajoLabel"><i class="bi bi-exclamation-triangle"></i> Alerta de Stock Bajo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <p>Productos con bajo stock:</p>
+            <ul>
+              {% for producto in productos_bajo_stock %}
+                <li><strong>{{ producto.nombre }}</strong> — {{ producto.stock_actual }} unidades</li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const modal = new bootstrap.Modal(document.getElementById('modalStockBajo'));
+        modal.show();
+      });
+    </script>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'home/js/main.js' %}"></script>
+{% endblock %}
+
+

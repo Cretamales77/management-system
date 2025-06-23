@@ -1,0 +1,113 @@
+{% extends 'home/base_main.html' %}
+
+{% block title %}Detalle de Compra - Inventario{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Detalle de Compra #{{ compra.id_compra }}</h2>
+        <div class="btn-group">
+          <a href="{% url 'editar_compra' compra.id_compra %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          <a href="{% url 'pdf_compra' compra.id_compra %}" class="btn btn-secondary">
+            <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+          </a>
+          <a href="{% url 'reembolso_compra' compra.id_compra %}" class="btn btn-success">
+            <i class="bi bi-arrow-counterclockwise"></i> Reembolso
+          </a>
+          <a href="{% url 'lista_compras' %}" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Volver
+          </a>
+        </div>
+      </div>
+
+      <!-- Información de la compra -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Información de la Compra</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>ID de Compra:</strong> {{ compra.id_compra }}</p>
+              <p><strong>Proveedor:</strong> {{ compra.proveedor.nombre }}</p>
+              <p><strong>Fecha:</strong> {{ compra.fecha|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Estado:</strong> 
+                <span class="badge {% if compra.estado == 'COMPLETADA' %}bg-success{% elif compra.estado == 'REEMBOLSADA' %}bg-warning{% elif compra.estado == 'PARCIALMENTE_REEMBOLSADA' %}bg-info{% else %}bg-danger{% endif %}">
+                  {{ compra.estado }}
+                </span>
+              </p>
+              <p><strong>Total:</strong> ${{ compra.total_compra|floatformat:2 }}</p>
+              {% if compra.fecha_entrega %}
+              <p><strong>Fecha de Entrega:</strong> {{ compra.fecha_entrega|date:"d/m/Y H:i" }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if compra.observaciones %}
+          <div class="row">
+            <div class="col-12">
+              <p><strong>Observaciones:</strong> {{ compra.observaciones }}</p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Productos de la compra -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Productos de la Compra</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th class="text-center">#</th>
+                  <th>Producto</th>
+                  <th class="text-center">Cantidad</th>
+                  <th class="text-center">Precio de Compra</th>
+                  <th class="text-center">Subtotal</th>
+                  <th class="text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for detalle in detalles %}
+                <tr>
+                  <td class="text-center">{{ forloop.counter }}</td>
+                  <td>{{ detalle.producto.nombre }} ({{ detalle.producto.marca }})</td>
+                  <td class="text-center">{{ detalle.cantidad }}</td>
+                  <td class="text-center">${{ detalle.precio_compra|floatformat:2 }}</td>
+                  <td class="text-center">${{ detalle.subtotal|floatformat:2 }}</td>
+                  <td class="text-center">
+                    <span class="badge {% if detalle.estado == 'ACTIVO' %}bg-success{% elif detalle.estado == 'REEMBOLSADO' %}bg-warning{% else %}bg-info{% endif %}">
+                      {{ detalle.estado }}
+                    </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center">No hay productos en esta compra.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="table-dark">
+                <tr>
+                  <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                  <td class="text-center"><strong>${{ compra.total_compra|floatformat:2 }}</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

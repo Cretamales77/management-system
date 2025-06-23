@@ -1,0 +1,465 @@
+{% extends 'home/base_main.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Análisis de Ventas y Compras{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h1 class="mb-4 text-center fw-bold text-primary">
+    Análisis de Ventas y Compras
+  </h1>
+
+  <!-- Filtros generales -->
+  <form method="get" class="row g-3 justify-content-center align-items-end mb-3">
+    <div class="col-auto">
+      <label for="top" class="form-label fw-semibold">Mostrar top:</label>
+      <input type="number" id="top" name="top" value="{{ top|default:'10' }}" min="1" max="1000" class="form-control rounded-pill border-primary" style="width: 120px;" />
+    </div>
+    <div class="col-auto">
+      <label for="fecha_inicio" class="form-label fw-semibold">Fecha inicio:</label>
+      <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio|default:'' }}" class="form-control rounded-pill border-primary" style="width: 180px;" />
+    </div>
+    <div class="col-auto">
+      <label for="fecha_fin" class="form-label fw-semibold">Fecha fin:</label>
+      <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin|default:'' }}" class="form-control rounded-pill border-primary" style="width: 180px;" />
+    </div>
+    <div class="col-auto d-grid">
+      <button type="submit" class="btn btn-primary rounded-pill px-5 fw-semibold">Actualizar</button>
+    </div>
+  </form>
+
+  <!-- Botones rápidos para períodos comunes -->
+  <div class="row justify-content-center mb-3">
+    <div class="col-auto">
+      <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPeriodo('hoy')">Hoy</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPeriodo('ayer')">Ayer</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPeriodo('semana')">Esta semana</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPeriodo('mes')">Este mes</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPeriodo('mes_anterior')">Mes anterior</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPeriodo('trimestre')">Este trimestre</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPeriodo('año')">Este año</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limpiarFiltros()">Limpiar filtros</button>
+      </div>
+    </div>
+  </div>
+
+  {% if advertencia_fecha %}
+  <div class="alert alert-warning text-center">La fecha de inicio era mayor que la fecha final. Se han invertido para mostrar resultados.</div>
+  {% endif %}
+
+  <!-- Análisis general del día actual -->
+  <div class="alert alert-secondary" id="resumenDia">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="fw-bold mb-0">Resumen general del día ({{ fecha_actual }}):</h5>
+      <small class="text-muted" id="ultimaActualizacion">Última actualización: <span id="horaActual"></span></small>
+    </div>
+    <ul class="mb-0" id="listaResumen">
+      <li>Total vendido: <strong id="totalVendidoHoy">{{ totales_ventas_hoy.total_cant|default:"0"|intcomma }}</strong> unidades por <strong id="totalMontoVentasHoy">${{ totales_ventas_hoy.total_monto|default:"0"|floatformat:2|intcomma }}</strong>.</li>
+      <li>Total comprado: <strong id="totalCompradoHoy">{{ totales_compras_hoy.total_cant|default:"0"|intcomma }}</strong> unidades por <strong id="totalMontoComprasHoy">${{ totales_compras_hoy.total_monto|default:"0"|floatformat:2|intcomma }}</strong>.</li>
+      {% if producto_mas_vendido_hoy %}
+      <li>Producto más vendido: <strong id="productoMasVendidoHoy">{{ producto_mas_vendido_hoy.producto__nombre }}</strong> (<span id="cantidadMasVendidoHoy">{{ producto_mas_vendido_hoy.total_vendido }}</span> unidades).</li>
+      {% else %}
+      <li>Producto más vendido: <strong id="productoMasVendidoHoy">No hay ventas hoy</strong></li>
+      {% endif %}
+      {% if producto_mas_comprado_hoy %}
+      <li>Producto más comprado: <strong id="productoMasCompradoHoy">{{ producto_mas_comprado_hoy.id_producto__nombre }}</strong> (<span id="cantidadMasCompradoHoy">{{ producto_mas_comprado_hoy.total_comprado }}</span> unidades).</li>
+      {% else %}
+      <li>Producto más comprado: <strong id="productoMasCompradoHoy">No hay compras hoy</strong></li>
+      {% endif %}
+      {% if mayor_gasto_hoy %}
+      <li>Producto con mayor gasto: <strong id="productoMayorGastoHoy">{{ mayor_gasto_hoy.id_producto__nombre }}</strong> ($<span id="montoMayorGastoHoy">{{ mayor_gasto_hoy.monto_gastado|floatformat:2|intcomma }}</span>).</li>
+      {% else %}
+      <li>Producto con mayor gasto: <strong id="productoMayorGastoHoy">No hay compras hoy</strong></li>
+      {% endif %}
+    </ul>
+  </div>
+
+  <!-- Análisis general del período seleccionado -->
+  <div class="alert alert-info" id="resumenPeriodo">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="fw-bold mb-0">
+        {% if fecha_inicio and fecha_fin %}
+          Resumen del período ({{ fecha_inicio }} - {{ fecha_fin }}):
+        {% elif fecha_inicio %}
+          Resumen desde {{ fecha_inicio }}:
+        {% elif fecha_fin %}
+          Resumen hasta {{ fecha_fin }}:
+        {% else %}
+          Resumen general (sin filtros de fecha):
+        {% endif %}
+      </h5>
+      <small class="text-muted">Datos del período seleccionado</small>
+    </div>
+    <ul class="mb-0">
+      <li>Total vendido: <strong>{{ totales_ventas.total_cant|default:"0"|intcomma }}</strong> unidades por <strong>${{ totales_ventas.total_monto|default:"0"|floatformat:2|intcomma }}</strong>.</li>
+      <li>Total comprado: <strong>{{ totales_compras.total_cant|default:"0"|intcomma }}</strong> unidades por <strong>${{ totales_compras.total_monto|default:"0"|floatformat:2|intcomma }}</strong>.</li>
+      {% if producto_mas_vendido %}
+      <li>Producto más vendido: <strong>{{ producto_mas_vendido.producto__nombre }}</strong> ({{ producto_mas_vendido.total_vendido }} unidades).</li>
+      {% else %}
+      <li>Producto más vendido: <strong>No hay ventas en este período</strong></li>
+      {% endif %}
+      {% if producto_mas_comprado %}
+      <li>Producto más comprado: <strong>{{ producto_mas_comprado.id_producto__nombre }}</strong> ({{ producto_mas_comprado.total_comprado }} unidades).</li>
+      {% else %}
+      <li>Producto más comprado: <strong>No hay compras en este período</strong></li>
+      {% endif %}
+      {% if mayor_gasto %}
+      <li>Producto con mayor gasto: <strong>{{ mayor_gasto.id_producto__nombre }}</strong> (${{ mayor_gasto.monto_gastado|floatformat:2|intcomma }}).</li>
+      {% else %}
+      <li>Producto con mayor gasto: <strong>No hay compras en este período</strong></li>
+      {% endif %}
+      {% if fecha_inicio and fecha_fin %}
+        {% if totales_ventas.total_monto and totales_compras.total_monto %}
+          <li>Balance neto: <strong class="{% if balance_neto > 0 %}text-success{% else %}text-danger{% endif %}">
+            ${{ balance_neto|floatformat:2|intcomma }}
+          </strong> ({{ balance_neto|floatformat:2|intcomma }}).</li>
+        {% endif %}
+      {% endif %}
+    </ul>
+  </div>
+
+  <!-- Tipo de gráfico -->
+  <div class="text-end mb-3">
+    <div class="d-flex justify-content-end align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <label for="tipoDatos" class="mb-0 fw-semibold">Datos del gráfico:</label>
+        <select id="tipoDatos" class="form-select d-inline-block w-auto rounded-pill">
+          <option value="periodo" selected>Período seleccionado</option>
+          <option value="dia">Día actual</option>
+        </select>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label for="tipoGrafico" class="mb-0 fw-semibold">Tipo de gráfico:</label>
+        <select id="tipoGrafico" class="form-select d-inline-block w-auto rounded-pill">
+          <option value="bar" selected>Barras</option>
+          <option value="pie">Circular</option>
+        </select>
+      </div>
+    </div>
+  </div>
+    <!-- Gráfico de ventas -->
+  <div class="mb-4" style="min-width: 600px; max-width: 100%; height: 450px;">
+    <canvas id="graficoVentas"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Datos del período seleccionado
+    const ventasLabels = [{% for item in productos_vendidos %}"{{ item.producto__nombre }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const ventasData = [{% for item in productos_vendidos %}{{ item.total_vendido }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    // Datos del día actual (inicialmente vacíos, se cargarán por AJAX)
+    let ventasLabelsHoy = [];
+    let ventasDataHoy = [];
+
+    let chartVentas;
+    let datosActuales = 'periodo'; // 'periodo' o 'dia'
+
+    function renderVentas(tipo = 'bar', datos = 'periodo') {
+      if (chartVentas) chartVentas.destroy();
+      
+      let labels, data;
+      if (datos === 'dia') {
+        labels = ventasLabelsHoy;
+        data = ventasDataHoy;
+      } else {
+        labels = ventasLabels;
+        data = ventasData;
+      }
+
+      chartVentas = new Chart(document.getElementById('graficoVentas').getContext('2d'), {
+        type: tipo,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: datos === 'dia' ? 'Ventas del día' : 'Ventas del período',
+            data: data,
+            backgroundColor: tipo === 'pie' ? [
+              '#007bff', '#6f42c1', '#ffc107', '#17a2b8', '#fd7e14',
+              '#28a745', '#dc3545', '#6610f2', '#fd7e14', '#20c997'
+            ] : 'rgba(51, 13, 122, 0.8)',
+            borderRadius: tipo === 'pie' ? 0 : 8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: tipo === 'pie' },
+            title: {
+              display: true,
+              text: datos === 'dia' ? 'Productos más vendidos del día' : 'Productos más vendidos del período',
+              font: { size: 16, weight: 'bold' }
+            },
+            datalabels: {
+              color: '#000',
+              formatter: (value) => value.toLocaleString()
+            }
+          },
+          scales: tipo === 'bar' ? {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value.toLocaleString();
+                }
+              }
+            }
+          } : {}
+        }
+      });
+    }
+
+    // Función para cargar datos del día actual
+    function cargarDatosDia() {
+      fetch(window.location.pathname + '?ajax=datos_dia')
+        .then(response => response.json())
+        .then(data => {
+          ventasLabelsHoy = data.productos_vendidos_hoy.map(item => item.producto__nombre);
+          ventasDataHoy = data.productos_vendidos_hoy.map(item => item.total_vendido);
+          
+          // Si el gráfico está mostrando datos del día, actualizarlo
+          if (datosActuales === 'dia') {
+            renderVentas(document.getElementById('tipoGrafico').value, 'dia');
+          }
+        })
+        .catch(error => {
+          console.error('Error al cargar datos del día:', error);
+        });
+    }
+
+    // Event listeners
+    document.getElementById('tipoGrafico').addEventListener('change', e => {
+      renderVentas(e.target.value, datosActuales);
+    });
+
+    document.getElementById('tipoDatos').addEventListener('change', e => {
+      datosActuales = e.target.value;
+      if (datosActuales === 'dia' && ventasLabelsHoy.length === 0) {
+        // Si no tenemos datos del día, cargarlos
+        cargarDatosDia();
+      } else {
+        renderVentas(document.getElementById('tipoGrafico').value, datosActuales);
+      }
+    });
+
+    // Inicializar gráfico
+    renderVentas();
+
+    // Cargar datos del día al inicio
+    cargarDatosDia();
+
+    // Función para actualizar la hora
+    function actualizarHora() {
+      const ahora = new Date();
+      const hora = ahora.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
+      document.getElementById('horaActual').textContent = hora;
+    }
+
+    // Función para actualizar el resumen del día
+    function actualizarResumenDia() {
+      fetch(window.location.pathname + '?ajax=resumen_dia')
+        .then(response => response.json())
+        .then(data => {
+          // Formatear números con comas
+          const formatearNumero = (num) => {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          };
+          
+          const formatearMoneda = (num) => {
+            return formatearNumero(parseFloat(num).toFixed(2));
+          };
+
+          document.getElementById('totalVendidoHoy').textContent = formatearNumero(data.totales_ventas_hoy.total_cant || 0);
+          document.getElementById('totalMontoVentasHoy').textContent = '$' + formatearMoneda(data.totales_ventas_hoy.total_monto || 0);
+          document.getElementById('totalCompradoHoy').textContent = formatearNumero(data.totales_compras_hoy.total_cant || 0);
+          document.getElementById('totalMontoComprasHoy').textContent = '$' + formatearMoneda(data.totales_compras_hoy.total_monto || 0);
+          
+          if (data.producto_mas_vendido_hoy) {
+            document.getElementById('productoMasVendidoHoy').textContent = data.producto_mas_vendido_hoy.producto__nombre;
+            document.getElementById('cantidadMasVendidoHoy').textContent = formatearNumero(data.producto_mas_vendido_hoy.total_vendido);
+          } else {
+            document.getElementById('productoMasVendidoHoy').textContent = 'No hay ventas hoy';
+          }
+          
+          if (data.producto_mas_comprado_hoy) {
+            document.getElementById('productoMasCompradoHoy').textContent = data.producto_mas_comprado_hoy.id_producto__nombre;
+            document.getElementById('cantidadMasCompradoHoy').textContent = formatearNumero(data.producto_mas_comprado_hoy.total_comprado);
+          } else {
+            document.getElementById('productoMasCompradoHoy').textContent = 'No hay compras hoy';
+          }
+          
+          if (data.mayor_gasto_hoy) {
+            document.getElementById('productoMayorGastoHoy').textContent = data.mayor_gasto_hoy.id_producto__nombre;
+            document.getElementById('montoMayorGastoHoy').textContent = formatearMoneda(data.mayor_gasto_hoy.monto_gastado);
+          } else {
+            document.getElementById('productoMayorGastoHoy').textContent = 'No hay compras hoy';
+          }
+        })
+        .catch(error => {
+          console.error('Error al actualizar resumen:', error);
+        });
+    }
+
+    // Función para actualizar datos del día (resumen + gráfico)
+    function actualizarDatosDia() {
+      actualizarResumenDia();
+      cargarDatosDia();
+    }
+
+    // Inicializar y configurar actualizaciones automáticas
+    actualizarHora();
+    setInterval(actualizarHora, 1000); // Actualizar hora cada segundo
+    setInterval(actualizarDatosDia, 30000); // Actualizar datos del día cada 30 segundos
+
+    // Funciones para los botones rápidos de períodos
+    function setPeriodo(tipo) {
+      const hoy = new Date();
+      let fechaInicio = '';
+      let fechaFin = '';
+
+      switch(tipo) {
+        case 'hoy':
+          fechaInicio = fechaFin = hoy.toISOString().split('T')[0];
+          break;
+        case 'ayer':
+          const ayer = new Date(hoy);
+          ayer.setDate(hoy.getDate() - 1);
+          fechaInicio = fechaFin = ayer.toISOString().split('T')[0];
+          break;
+        case 'semana':
+          const inicioSemana = new Date(hoy);
+          inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+          fechaInicio = inicioSemana.toISOString().split('T')[0];
+          fechaFin = hoy.toISOString().split('T')[0];
+          break;
+        case 'mes':
+          fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+          fechaFin = hoy.toISOString().split('T')[0];
+          break;
+        case 'mes_anterior':
+          const mesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+          fechaInicio = mesAnterior.toISOString().split('T')[0];
+          fechaFin = new Date(hoy.getFullYear(), hoy.getMonth(), 0).toISOString().split('T')[0];
+          break;
+        case 'trimestre':
+          const trimestre = Math.floor(hoy.getMonth() / 3);
+          fechaInicio = new Date(hoy.getFullYear(), trimestre * 3, 1).toISOString().split('T')[0];
+          fechaFin = hoy.toISOString().split('T')[0];
+          break;
+        case 'año':
+          fechaInicio = new Date(hoy.getFullYear(), 0, 1).toISOString().split('T')[0];
+          fechaFin = hoy.toISOString().split('T')[0];
+          break;
+      }
+
+      document.getElementById('fecha_inicio').value = fechaInicio;
+      document.getElementById('fecha_fin').value = fechaFin;
+      
+      // Resaltar el botón seleccionado
+      document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('btn-secondary', 'active');
+        btn.classList.add('btn-outline-secondary');
+      });
+      event.target.classList.remove('btn-outline-secondary');
+      event.target.classList.add('btn-secondary', 'active');
+    }
+
+    function limpiarFiltros() {
+      document.getElementById('fecha_inicio').value = '';
+      document.getElementById('fecha_fin').value = '';
+      
+      // Limpiar resaltado de botones
+      document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('btn-secondary', 'active');
+        btn.classList.add('btn-outline-secondary');
+      });
+    }
+
+    // Resaltar el botón correspondiente al período actual
+    function resaltarPeriodoActual() {
+      const fechaInicio = document.getElementById('fecha_inicio').value;
+      const fechaFin = document.getElementById('fecha_fin').value;
+      
+      if (!fechaInicio && !fechaFin) return;
+      
+      const hoy = new Date();
+      const inicio = fechaInicio ? new Date(fechaInicio) : null;
+      const fin = fechaFin ? new Date(fechaFin) : null;
+      
+      // Determinar qué período corresponde
+      let tipoPeriodo = '';
+      
+      if (inicio && fin && inicio.toDateString() === fin.toDateString()) {
+        if (inicio.toDateString() === hoy.toDateString()) {
+          tipoPeriodo = 'hoy';
+        } else {
+          const ayer = new Date(hoy);
+          ayer.setDate(hoy.getDate() - 1);
+          if (inicio.toDateString() === ayer.toDateString()) {
+            tipoPeriodo = 'ayer';
+          }
+        }
+      } else if (inicio && fin) {
+        // Verificar si es este mes
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        if (inicio.toDateString() === inicioMes.toDateString() && fin.toDateString() === hoy.toDateString()) {
+          tipoPeriodo = 'mes';
+        }
+        // Verificar si es este año
+        const inicioAño = new Date(hoy.getFullYear(), 0, 1);
+        if (inicio.toDateString() === inicioAño.toDateString() && fin.toDateString() === hoy.toDateString()) {
+          tipoPeriodo = 'año';
+        }
+      }
+      
+      if (tipoPeriodo) {
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+          if (btn.textContent.toLowerCase().includes(tipoPeriodo.replace('_', ' '))) {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-secondary', 'active');
+          }
+        });
+      }
+    }
+
+    // Ejecutar al cargar la página
+    resaltarPeriodoActual();
+  </script>
+</div>
+  <!-- Compras por proveedor -->
+  <div class="card shadow-sm rounded-4 border border-2 border-info mb-5">
+    <div class="card-body">
+      <h2 class="card-title text-center fw-bold mb-4 text-info">Compras por Proveedor</h2>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-info">
+            <tr>
+              <th>Proveedor</th>
+              <th class="text-end">Cantidad Total</th>
+              <th class="text-end">Monto Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in compras_por_proveedor %}
+            <tr>
+              <td>{{ item.id_proveedor__nombre }}</td>
+              <td class="text-end">{{ item.total_cant|intcomma }}</td>
+              <td class="text-end">${{ item.total_monto|floatformat:2|intcomma }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted">No hay compras por proveedor para este rango de fechas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

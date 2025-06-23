@@ -1,0 +1,125 @@
+{% extends 'home/base_main.html' %}
+{% load humanize %}
+{% block title %}Reembolsos{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-arrow-return-left text-primary me-2"></i>Reembolsos realizados</h3>
+    <div>
+      <a href="{% url 'exportar_reembolsos_pdf' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-danger me-2">
+        <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+      </a>
+      <a href="{% url 'ventas' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a ventas
+      </a>
+    </div>
+  </div>
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-md-2">
+      <input type="date" name="fecha_inicio" class="form-control" value="{{ filtros.fecha_inicio }}" placeholder="Desde">
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="fecha_fin" class="form-control" value="{{ filtros.fecha_fin }}" placeholder="Hasta">
+    </div>
+    <div class="col-md-2">
+      <select name="usuario" class="form-select">
+        <option value="">Usuario</option>
+        {% for usuario in usuarios %}
+          <option value="{{ usuario.id }}" {% if filtros.usuario_id == usuario.id|stringformat:'s' %}selected{% endif %}>{{ usuario.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="producto" class="form-select">
+        <option value="">Producto</option>
+        {% for producto in productos %}
+          <option value="{{ producto.id_producto }}" {% if filtros.producto_id == producto.id_producto|stringformat:'s' %}selected{% endif %}>{{ producto.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <input type="text" name="venta" class="form-control" value="{{ filtros.venta_id }}" placeholder="ID Venta">
+    </div>
+    <div class="col-md-1 d-grid">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i></button>
+    </div>
+  </form>
+  {% if resumen_producto %}
+    <div class="alert alert-info mb-3">
+      <strong>Resumen para {{ resumen_producto.nombre }}:</strong><br>
+      Total unidades reembolsadas: <span class="fw-bold">{{ resumen_producto.total_unidades }}</span><br>
+      Total devuelto: <span class="fw-bold text-success">${{ resumen_producto.total_dinero|floatformat:0|intcomma }}</span>
+      {% if resumen_producto.usuarios %}<br>Usuarios que reembolsaron: {{ resumen_producto.usuarios|join:', ' }}{% endif %}
+    </div>
+  {% endif %}
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle text-center mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha</th>
+          <th>ID Venta</th>
+          <th>Productos reembolsados</th>
+          <th>Total devuelto</th>
+          <th>Usuario</th>
+          <th>Observaciones</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reembolso in reembolsos %}
+        <tr class="{% if reembolso.es_reembolso_total %}table-danger{% else %}table-warning{% endif %}">
+          <td>{{ reembolso.fecha_hora|date:'Y-m-d H:i' }}</td>
+          <td>
+            <a href="{% url 'editar_venta' reembolso.venta.id_venta %}" class="text-decoration-none">
+              Venta #{{ reembolso.venta.id_venta }}
+            </a>
+          </td>
+          <td class="text-start">
+            <ul class="mb-0 ps-3" data-bs-toggle="tooltip" title="{% for det in reembolso.detalles.all %}{{ det.producto.nombre }} (x{{ det.cantidad }}){% if not forloop.last %}, {% endif %}{% endfor %}">
+              {% for det in reembolso.detalles.all %}
+                <li>{{ det.producto.nombre }} <span class="badge bg-secondary">x{{ det.cantidad }}</span></li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td class="fw-bold text-success">${{ reembolso.total_devuelto|floatformat:0|intcomma }}</td>
+          <td>{{ reembolso.usuario.nombre_usuario|default:'—' }}</td>
+          <td>
+            <span data-bs-toggle="tooltip" title="{{ reembolso.observaciones|default:'—' }}">
+              {{ reembolso.observaciones|truncatechars:30|default:'—' }}
+            </span>
+          </td>
+          <td>
+            <form method="post" action="{% url 'eliminar_reembolso' reembolso.id_reembolso %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que deseas eliminar este reembolso de la venta #{{ reembolso.venta.id_venta }}? Esta acción no se puede deshacer.');">
+                <i class="bi bi-trash"></i> Eliminar
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted">No hay reembolsos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light">
+        <tr>
+          <td colspan="4" class="text-end fw-bold">Total reembolsado:</td>
+          <td class="fw-bold text-success">${{ total_reembolsado|floatformat:0|intcomma }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+})
+</script>
+{% endblock %}
+{% endblock %} 

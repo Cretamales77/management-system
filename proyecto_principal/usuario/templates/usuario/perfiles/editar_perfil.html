@@ -1,0 +1,328 @@
+{% extends 'home/base_main.html' %}
+{% load static %}
+
+{% block title %}Editar Perfil - Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <div class="icon-circle bg-primary bg-opacity-10">
+      <i class="bi bi-person-gear-fill text-primary"></i>
+    </div>
+    <div>
+      <h1 class="h3 mb-1">Editar Perfil</h1>
+      <p class="text-muted mb-0">Modifica la información del perfil de usuario</p>
+    </div>
+  </div>
+  <a href="{% url 'lista_perfiles' %}" class="btn btn-light d-inline-flex align-items-center gap-2">
+    <i class="bi bi-arrow-left"></i>
+    <span>Volver</span>
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <form method="post" class="needs-validation" novalidate>
+          {% csrf_token %}
+          
+          <div class="row g-4">
+            <!-- Nombre de Usuario -->
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="username" 
+                  name="username" 
+                  value="{{ usuario.nombre_usuario }}"
+                  placeholder="Nombre de Usuario"
+                  required
+                  pattern="^[a-zA-Z0-9_]+$"
+                  minlength="3"
+                  maxlength="30"
+                  title="Solo letras, números y guiones bajos"
+                />
+                <label for="username">
+                  <i class="bi bi-person text-primary me-2"></i>
+                  Nombre de Usuario
+                </label>
+                <div class="invalid-feedback">
+                  El nombre de usuario debe contener solo letras, números y guiones bajos
+                </div>
+                <div class="form-text">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <span id="usernameHelp">Entre 3 y 30 caracteres</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Correo Electrónico -->
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="email" 
+                  name="email" 
+                  value="{{ usuario.correo }}"
+                  placeholder="Correo Electrónico"
+                  required
+                  pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                  title="Formato: usuario@dominio.extensión"
+                />
+                <label for="email">
+                  <i class="bi bi-envelope text-primary me-2"></i>
+                  Correo Electrónico
+                </label>
+                <div class="invalid-feedback">
+                  Por favor ingresa un correo electrónico válido
+                </div>
+                <div class="form-text">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <span id="emailHelp">Ejemplo: usuario@correo.com</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cambiar Contraseña -->
+            <div class="col-12">
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="cambiarPassword">
+                <label class="form-check-label" for="cambiarPassword">
+                  <i class="bi bi-key text-primary me-2"></i>
+                  Cambiar contraseña
+                </label>
+              </div>
+            </div>
+
+            <!-- Campos de Contraseña (inicialmente ocultos) -->
+            <div id="passwordFields" class="row g-4 d-none">
+              <!-- Nueva Contraseña -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Nueva Contraseña"
+                    minlength="8"
+                    maxlength="20"
+                    pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,20}$"
+                    title="Mínimo 8 caracteres, al menos una letra y un número"
+                  />
+                  <label for="password">
+                    <i class="bi bi-key text-primary me-2"></i>
+                    Nueva Contraseña
+                  </label>
+                  <div class="invalid-feedback">
+                    La contraseña debe tener entre 8 y 20 caracteres, al menos una letra y un número
+                  </div>
+                  <div class="form-text">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    <span id="passwordHelp">Mínimo 8 caracteres, al menos una letra y un número</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Confirmar Nueva Contraseña -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="password2" 
+                    name="password2" 
+                    placeholder="Confirmar Nueva Contraseña"
+                  />
+                  <label for="password2">
+                    <i class="bi bi-key-fill text-primary me-2"></i>
+                    Confirmar Nueva Contraseña
+                  </label>
+                  <div class="invalid-feedback">
+                    Las contraseñas no coinciden
+                  </div>
+                  <div class="form-text">
+                    <i class="bi bi-check-circle me-1"></i>
+                    <span id="confirmPasswordHelp">Debe coincidir con la nueva contraseña</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mostrar Contraseñas -->
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="mostrarPassword">
+                  <label class="form-check-label" for="mostrarPassword">
+                    <i class="bi bi-eye text-primary me-2"></i>
+                    Mostrar contraseñas
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones -->
+          <div class="d-flex gap-2 justify-content-end mt-4">
+            <a href="{% url 'lista_perfiles' %}" class="btn btn-light">
+              <i class="bi bi-x-circle me-2"></i>
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle me-2"></i>
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.needs-validation');
+    const username = document.getElementById('username');
+    const email = document.getElementById('email');
+    const cambiarPassword = document.getElementById('cambiarPassword');
+    const passwordFields = document.getElementById('passwordFields');
+    const password = document.getElementById('password');
+    const password2 = document.getElementById('password2');
+    const mostrarPassword = document.getElementById('mostrarPassword');
+
+    // Mostrar/ocultar campos de contraseña
+    cambiarPassword.addEventListener('change', function() {
+      if (this.checked) {
+        passwordFields.classList.remove('d-none');
+        password.setAttribute('required', '');
+        password2.setAttribute('required', '');
+      } else {
+        passwordFields.classList.add('d-none');
+        password.removeAttribute('required');
+        password2.removeAttribute('required');
+        password.value = '';
+        password2.value = '';
+      }
+    });
+
+    // Validación en tiempo real del nombre de usuario
+    username.addEventListener('input', function() {
+      const value = this.value;
+      const isValid = /^[a-zA-Z0-9_]+$/.test(value);
+      const isLengthValid = value.length >= 3 && value.length <= 30;
+      
+      if (!isValid) {
+        this.setCustomValidity('Solo se permiten letras, números y guiones bajos');
+      } else if (!isLengthValid) {
+        this.setCustomValidity('El nombre debe tener entre 3 y 30 caracteres');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    // Validación en tiempo real del correo electrónico
+    email.addEventListener('input', function() {
+      const value = this.value;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      
+      if (!emailRegex.test(value)) {
+        this.setCustomValidity('Ingresa un correo electrónico válido (ejemplo: usuario@correo.com)');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    // Validación en tiempo real de la contraseña
+    password.addEventListener('input', function() {
+      if (!cambiarPassword.checked) return;
+      
+      const value = this.value;
+      const hasLetter = /[A-Za-z]/.test(value);
+      const hasNumber = /\d/.test(value);
+      const isLengthValid = value.length >= 8 && value.length <= 20;
+      
+      if (!isLengthValid) {
+        this.setCustomValidity('La contraseña debe tener entre 8 y 20 caracteres');
+      } else if (!hasLetter || !hasNumber) {
+        this.setCustomValidity('La contraseña debe contener al menos una letra y un número');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    // Validación del formulario al enviar
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      // Validar contraseñas solo si se está cambiando la contraseña
+      if (cambiarPassword.checked) {
+        if (password.value !== password2.value) {
+          password2.setCustomValidity('Las contraseñas no coinciden');
+          event.preventDefault();
+          event.stopPropagation();
+        } else {
+          password2.setCustomValidity('');
+        }
+      }
+
+      form.classList.add('was-validated');
+    });
+
+    // Mostrar/ocultar contraseñas
+    mostrarPassword.addEventListener('change', function() {
+      const type = this.checked ? 'text' : 'password';
+      password.type = type;
+      password2.type = type;
+    });
+
+    // Validar contraseñas en tiempo real
+    password2.addEventListener('input', function() {
+      if (!cambiarPassword.checked) return;
+      
+      if (password.value !== this.value) {
+        this.setCustomValidity('Las contraseñas no coinciden');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+  });
+</script>
+
+<style>
+  /* Contraste y visibilidad mínimos sin romper form-floating */
+  .card-body .form-control {
+    color: #212529 !important;
+    border: 1.5px solid #b0b6bd !important;
+    background-color: #fff !important;
+  }
+  .card-body .form-control:focus {
+    color: #212529 !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 0.15rem rgba(37,99,235,.15) !important;
+  }
+  .card-body .form-check-input {
+    border: 1.5px solid #b0b6bd !important;
+    background-color: #fff !important;
+  }
+  .card-body .form-check-input:checked {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+  }
+  .card-body .form-check-label {
+    color: #212529 !important;
+  }
+  .card-body .form-text {
+    color: #6c757d !important;
+  }
+  .card-body .invalid-feedback {
+    color: #dc3545 !important;
+  }
+</style>
+{% endblock %} 

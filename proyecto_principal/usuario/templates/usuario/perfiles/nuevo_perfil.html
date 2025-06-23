@@ -1,0 +1,354 @@
+{% extends 'home/base_main.html' %}
+{% load static %}
+
+{% block title %}Nuevo Perfil - Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <div class="icon-circle bg-primary bg-opacity-10">
+      <i class="bi bi-person-plus-fill text-primary"></i>
+    </div>
+    <div>
+      <h1 class="h3 mb-1">Nuevo Perfil</h1>
+      <p class="text-muted mb-0">Crea un nuevo perfil de usuario</p>
+    </div>
+  </div>
+  <a href="{% url 'lista_perfiles' %}" class="btn btn-light d-inline-flex align-items-center gap-2">
+    <i class="bi bi-arrow-left"></i>
+    <span>Volver</span>
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <form method="post" class="needs-validation" novalidate>
+          {% csrf_token %}
+          
+          <div class="row g-4">
+            <!-- Nombre de Usuario -->
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="username" 
+                  name="username" 
+                  placeholder="Nombre de Usuario"
+                  required
+                  pattern="^[a-zA-Z0-9_]+$"
+                  minlength="3"
+                  maxlength="30"
+                  title="Solo letras, números y guiones bajos"
+                />
+                <label for="username">
+                  <i class="bi bi-person text-primary me-2"></i>
+                  Nombre de Usuario
+                </label>
+                <div class="invalid-feedback">
+                  El nombre de usuario debe contener solo letras, números y guiones bajos
+                </div>
+                <div class="form-text">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <span id="usernameHelp">Entre 3 y 30 caracteres</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Correo Electrónico -->
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="email" 
+                  name="email" 
+                  placeholder="Correo Electrónico"
+                  required
+                  pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                  title="Formato: usuario@dominio.extensión"
+                />
+                <label for="email">
+                  <i class="bi bi-envelope text-primary me-2"></i>
+                  Correo Electrónico
+                </label>
+                <div class="invalid-feedback">
+                  Por favor ingresa un correo electrónico válido
+                </div>
+                <div class="form-text">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <span id="emailHelp">Ejemplo: usuario@correo.com</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contraseña -->
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  id="password" 
+                  name="password" 
+                  placeholder="Contraseña"
+                  required
+                  minlength="8"
+                  maxlength="20"
+                  pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,20}$"
+                  title="Mínimo 8 caracteres, al menos una letra y un número"
+                />
+                <label for="password">
+                  <i class="bi bi-key text-primary me-2"></i>
+                  Contraseña
+                </label>
+                <div class="invalid-feedback">
+                  La contraseña debe tener entre 8 y 20 caracteres, al menos una letra y un número
+                </div>
+                <div class="form-text">
+                  <i class="bi bi-shield-lock me-1"></i>
+                  <span id="passwordHelp">Mínimo 8 caracteres, al menos una letra y un número</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Confirmar Contraseña -->
+            <div class="col-md-6">
+              <div class="form-floating">
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  id="password2" 
+                  name="password2" 
+                  placeholder="Confirmar Contraseña"
+                  required
+                />
+                <label for="password2">
+                  <i class="bi bi-key-fill text-primary me-2"></i>
+                  Confirmar Contraseña
+                </label>
+                <div class="invalid-feedback">
+                  Las contraseñas no coinciden
+                </div>
+                <div class="form-text">
+                  <i class="bi bi-check-circle me-1"></i>
+                  <span id="confirmPasswordHelp">Debe coincidir con la contraseña</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mostrar Contraseñas -->
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" id="mostrarPassword">
+            <label class="form-check-label" for="mostrarPassword">
+              <i class="bi bi-eye text-primary me-2"></i>
+              Mostrar contraseñas
+            </label>
+          </div>
+
+          <!-- Botones -->
+          <div class="d-flex gap-2 justify-content-end mt-4">
+            <a href="{% url 'lista_perfiles' %}" class="btn btn-light">
+              <i class="bi bi-x-circle me-2"></i>
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle me-2"></i>
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Validación del formulario
+    const form = document.querySelector('.needs-validation');
+    const username = document.getElementById('username');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('password2');
+
+    // Validación en tiempo real del nombre de usuario
+    username.addEventListener('input', function() {
+      const value = this.value;
+      const isValid = /^[a-zA-Z0-9_]+$/.test(value);
+      const isLengthValid = value.length >= 3 && value.length <= 30;
+      
+      if (!isValid) {
+        this.setCustomValidity('Solo se permiten letras, números y guiones bajos');
+      } else if (!isLengthValid) {
+        this.setCustomValidity('El nombre debe tener entre 3 y 30 caracteres');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    // Validación en tiempo real del correo electrónico
+    email.addEventListener('input', function() {
+      const value = this.value;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      
+      if (!emailRegex.test(value)) {
+        this.setCustomValidity('Ingresa un correo electrónico válido (ejemplo: usuario@correo.com)');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    // Validación en tiempo real de la contraseña
+    password.addEventListener('input', function() {
+      const value = this.value;
+      const hasLetter = /[A-Za-z]/.test(value);
+      const hasNumber = /\d/.test(value);
+      const isLengthValid = value.length >= 8 && value.length <= 20;
+      
+      if (!isLengthValid) {
+        this.setCustomValidity('La contraseña debe tener entre 8 y 20 caracteres');
+      } else if (!hasLetter || !hasNumber) {
+        this.setCustomValidity('La contraseña debe contener al menos una letra y un número');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+
+    // Validación del formulario al enviar
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      // Validar que las contraseñas coincidan
+      if (password.value !== confirmPassword.value) {
+        confirmPassword.setCustomValidity('Las contraseñas no coinciden');
+        event.preventDefault();
+        event.stopPropagation();
+      } else {
+        confirmPassword.setCustomValidity('');
+      }
+
+      form.classList.add('was-validated');
+    });
+
+    // Mostrar/ocultar contraseñas
+    const mostrarPassword = document.getElementById('mostrarPassword');
+    mostrarPassword.addEventListener('change', function() {
+      const type = this.checked ? 'text' : 'password';
+      password.type = type;
+      confirmPassword.type = type;
+    });
+
+    // Validar contraseñas en tiempo real
+    confirmPassword.addEventListener('input', function() {
+      if (password.value !== this.value) {
+        this.setCustomValidity('Las contraseñas no coinciden');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
+  });
+</script>
+
+<style>
+  .icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-circle i {
+    font-size: 1.5rem;
+  }
+
+  .form-floating > .form-control:focus ~ label,
+  .form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: var(--bs-primary);
+  }
+
+  .form-floating > .form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+  }
+
+  .form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+  }
+
+  .form-text {
+    font-size: 0.85rem;
+    color: var(--bs-gray-600);
+    margin-top: 0.25rem;
+  }
+
+  .form-text i {
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 0.75rem 1.25rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn i {
+    font-size: 1.1rem;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .card {
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .invalid-feedback {
+    font-size: 0.85rem;
+  }
+
+  /* Contraste y visibilidad mínimos sin romper form-floating */
+  .card-body .form-control {
+    color: #212529 !important;
+    border: 1.5px solid #b0b6bd !important;
+    background-color: #fff !important;
+  }
+  .card-body .form-control:focus {
+    color: #212529 !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 0.15rem rgba(37,99,235,.15) !important;
+  }
+  .card-body .form-check-input {
+    border: 1.5px solid #b0b6bd !important;
+    background-color: #fff !important;
+  }
+  .card-body .form-check-input:checked {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+  }
+  .card-body .form-check-label {
+    color: #212529 !important;
+  }
+  .card-body .form-text {
+    color: #6c757d !important;
+  }
+  .card-body .invalid-feedback {
+    color: #dc3545 !important;
+  }
+</style>
+{% endblock %} 

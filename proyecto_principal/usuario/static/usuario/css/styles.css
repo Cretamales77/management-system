@@ -1,0 +1,196 @@
+body {
+  height: 100vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #ddd;
+  background-color: #121212;
+  overflow: hidden;
+}
+
+.login-box {
+  background: rgba(30, 30, 30, 0.9);
+  padding: 2.5rem 2rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  width: 100%;
+  max-width: 400px;
+  color: #eee;
+  position: relative;
+  animation: fadeInLogin 0.7s;
+}
+
+.login-box h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: #d1d5db;
+  letter-spacing: 0.04em;
+}
+
+.form-label {
+  color: #bbb;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  display: block;
+  user-select: none;
+}
+
+.form-control {
+  background-color: rgba(50, 50, 50, 0.85);
+  color: #f0f0f0 !important;
+  border: 1px solid rgba(200, 200, 200, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  font-size: 1rem;
+  width: 100%;
+  box-shadow: inset 0 1.2px 3px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.3s ease;
+}
+
+.form-control::placeholder {
+  color: #a3a8b1;
+  opacity: 1;
+}
+
+.form-control:focus {
+  background-color: rgba(50, 50, 50, 0.95);
+  border-color: #3a7bd5;
+  outline: none;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background-color: #4a90e2;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #f0f4f8;
+  cursor: pointer;
+  width: 100%;
+  user-select: none;
+  transition: background-color 0.3s, transform 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary i {
+  font-size: 1.2rem;
+}
+
+.btn-primary:hover {
+  background-color: #357abd;
+  transform: translateY(-2px) scale(1.03);
+}
+
+a {
+  color: #3a7bd5;
+  text-decoration: underline;
+  font-weight: 500;
+  user-select: none;
+}
+
+a:hover {
+  color: #2c5bbf;
+  text-decoration: none;
+}
+
+.alert {
+  font-size: 0.9rem;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: rgba(70, 70, 70, 0.5);
+  color: #ddd;
+  margin-top: 1rem;
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    padding: 1.5rem 1rem;
+    margin: 0 1rem;
+  }
+}
+
+/* --- CHECKBOX PROFESIONAL --- */
+.form-check-input {
+  accent-color: #4a90e2;
+  width: 1.1em;
+  height: 1.1em;
+  border-radius: 0.25em;
+  margin-top: 0.2em;
+  margin-right: 0.5em;
+  box-shadow: 0 1px 2px #0002;
+  border: 1.5px solid #3a7bd5;
+  transition: border-color 0.2s;
+}
+
+.form-check-input:focus {
+  border-color: #357abd;
+  box-shadow: 0 0 0 2px #4a90e233;
+}
+
+.form-check-label {
+  color: #bfc7d1;
+  font-size: 0.98rem;
+  font-weight: 500;
+  user-select: none;
+}
+
+/* --- ANIMACIÓN FADE-IN LOGIN --- */
+@keyframes fadeInLogin {
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- INPUT CON ÍCONO A LA IZQUIERDA (VERIFICACIÓN) --- */
+.input-icon-left {
+  position: relative;
+}
+.input-icon-left .form-control {
+  padding-left: 2.4rem !important;
+}
+.input-icon-left .input-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #4a90e2;
+  font-size: 1.15rem;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --- INPUT-GROUP OSCURO UNIFORME --- */
+.input-group .form-control,
+.input-group .input-group-text {
+  background-color: rgba(50, 50, 50, 0.85) !important;
+  color: #4a90e2 !important;
+  border: 1px solid rgba(200, 200, 200, 0.15) !important;
+  box-shadow: none !important;
+}
+.input-group .form-control {
+  color: #f0f0f0 !important;
+}
+.input-group .input-group-text {
+  border-right: none !important;
+  border-radius: 10px 0 0 10px !important;
+  display: flex;
+  align-items: center;
+  padding-right: 0.6rem;
+  padding-left: 0.8rem;
+}
+.input-group .form-control {
+  border-radius: 0 10px 10px 0 !important;
+  border-left: none !important;
+}
+.input-group .form-control:focus {
+  border-color: #3a7bd5 !important;
+  box-shadow: none !important;
+}

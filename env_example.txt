@@ -1,0 +1,29 @@
+# Configuración de Django
+DEBUG=True
+SECRET_KEY=tu_clave_secreta_aqui_cambiala_por_una_segura
+
+# Configuración de Base de Datos MySQL
+DATABASE_NAME=ferreteria_db
+DATABASE_USER=tu_usuario_mysql
+DATABASE_PASSWORD=tu_password_mysql
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+
+# Configuración de Email (opcional)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=tu_email@gmail.com
+EMAIL_HOST_PASSWORD=tu_password_de_aplicacion
+
+# Configuración de Archivos Media
+MEDIA_URL=/media/
+MEDIA_ROOT=media/
+
+# Configuración de Archivos Estáticos
+STATIC_URL=/static/
+STATIC_ROOT=staticfiles/
+
+# Configuración de Seguridad (para producción)
+ALLOWED_HOSTS=localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000 

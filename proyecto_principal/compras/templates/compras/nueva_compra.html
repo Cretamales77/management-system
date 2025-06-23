@@ -1,0 +1,179 @@
+{% extends 'home/base_main.html' %}
+
+{% block title %}Nueva Compra - Inventario{% endblock %}
+
+{% block content %}
+<h2>Registrar Nueva Compra</h2>
+
+<form method="post" class="row g-3">
+  {% csrf_token %}
+
+  {{ form.non_field_errors }}
+  <div class="col-md-6">
+    {{ form.proveedor.label_tag }}
+    {{ form.proveedor }}
+    {{ form.proveedor.errors }}
+  </div>
+  <div class="col-md-6">
+    {{ form.fecha_entrega.label_tag }}
+    {{ form.fecha_entrega }}
+    {{ form.fecha_entrega.errors }}
+  </div>
+  <div class="col-12">
+    {{ form.observaciones.label_tag }}
+    {{ form.observaciones }}
+    {{ form.observaciones.errors }}
+  </div>
+
+  <hr>
+  <div class="d-flex justify-content-between align-items-center">
+    <h4>Productos de la compra</h4>
+    <button type="button" class="btn btn-success" id="add-row">
+      <i class="bi bi-plus-circle"></i> Agregar Producto
+    </button>
+  </div>
+  
+  {{ formset.management_form }}
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover">
+      <thead class="table-dark">
+        <tr>
+          <th>Producto</th>
+          <th class="text-center">Cantidad</th>
+          <th class="text-center">Precio Unitario</th>
+          <th class="text-center">Subtotal</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="detalle-compra-table">
+        {% for form in formset %}
+        <tr class="producto-row">
+          <td>{{ form.producto }}</td>
+          <td class="text-center">
+            {{ form.cantidad }}
+            {{ form.cantidad.errors }}
+          </td>
+          <td class="text-center">
+            {{ form.precio_compra }}
+            {{ form.precio_compra.errors }}
+          </td>
+          <td class="text-center subtotal-cell">$0.00</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm remove-row" title="Eliminar producto">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-dark">
+        <tr>
+          <td colspan="3" class="text-end"><strong>Total de la Compra:</strong></td>
+          <td class="text-center"><strong id="total-compra">$0.00</strong></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="col-12 mt-3">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save"></i> Guardar Compra
+    </button>
+    <a href="{% url 'lista_compras' %}" class="btn btn-secondary">Cancelar</a>
+  </div>
+</form>
+
+<script>
+// Script para manejar el formset dinámicamente
+let totalForms = document.getElementById('id_detallecompra_set-TOTAL_FORMS');
+const addRowBtn = document.getElementById('add-row');
+const tableBody = document.getElementById('detalle-compra-table');
+
+// Función para calcular el subtotal de una fila
+function calcularSubtotal(row) {
+  const cantidadInput = row.querySelector('input[name*="-cantidad"]');
+  const precioInput = row.querySelector('input[name*="-precio_compra"]');
+  const subtotalCell = row.querySelector('.subtotal-cell');
+  
+  const cantidad = parseFloat(cantidadInput.value) || 0;
+  const precio = parseFloat(precioInput.value) || 0;
+  const subtotal = cantidad * precio;
+  
+  subtotalCell.textContent = `$${subtotal.toFixed(2)}`;
+  return subtotal;
+}
+
+// Función para calcular el total de toda la compra
+function calcularTotalCompra() {
+  let total = 0;
+  const rows = document.querySelectorAll('.producto-row');
+  
+  rows.forEach(row => {
+    total += calcularSubtotal(row);
+  });
+  
+  document.getElementById('total-compra').textContent = `$${total.toFixed(2)}`;
+}
+
+// Event listeners para cambios en cantidad y precio
+function agregarEventListeners(row) {
+  const cantidadInput = row.querySelector('input[name*="-cantidad"]');
+  const precioInput = row.querySelector('input[name*="-precio_compra"]');
+  
+  cantidadInput.addEventListener('input', () => calcularTotalCompra());
+  precioInput.addEventListener('input', () => calcularTotalCompra());
+}
+
+// Agregar producto
+addRowBtn.addEventListener('click', function() {
+  const currentFormCount = parseInt(totalForms.value);
+  const lastRow = tableBody.querySelector('tr:last-child');
+  const newRow = lastRow.cloneNode(true);
+  
+  // Limpiar los valores de la nueva fila
+  newRow.querySelectorAll('input, select').forEach(function(input) {
+    if (input.type === 'number' || input.tagName === 'SELECT') {
+      input.value = '';
+    }
+    if (input.name.includes('-id')) {
+      input.value = '';
+    }
+  });
+  
+  // Actualizar los índices de los campos
+  newRow.innerHTML = newRow.innerHTML.replaceAll(`-${currentFormCount-1}-`, `-${currentFormCount}-`);
+  
+  // Limpiar subtotal
+  newRow.querySelector('.subtotal-cell').textContent = '$0.00';
+  
+  tableBody.appendChild(newRow);
+  totalForms.value = currentFormCount + 1;
+  
+  // Agregar event listeners a la nueva fila
+  agregarEventListeners(newRow);
+});
+
+// Eliminar fila
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('remove-row') || e.target.closest('.remove-row')) {
+    const row = e.target.closest('tr');
+    if (document.querySelectorAll('.producto-row').length > 1) {
+      row.remove();
+      calcularTotalCompra();
+    } else {
+      alert('Debe haber al menos un producto en la compra.');
+    }
+  }
+});
+
+// Inicializar event listeners en las filas existentes
+document.addEventListener('DOMContentLoaded', function() {
+  const rows = document.querySelectorAll('.producto-row');
+  rows.forEach(row => {
+    agregarEventListeners(row);
+  });
+  calcularTotalCompra();
+});
+</script>
+{% endblock %}

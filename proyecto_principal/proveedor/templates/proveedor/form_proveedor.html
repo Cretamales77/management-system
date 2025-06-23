@@ -1,0 +1,116 @@
+{% extends 'home/base_main.html' %}
+{% load static %}
+
+{% block title %}{{ accion }} Proveedor - Inventario{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-lg rounded-4">
+        <div class="card-header bg-primary text-white rounded-top-4">
+          <h4 class="mb-0">
+            <i class="bi bi-{% if accion == 'Agregar' %}plus-circle{% else %}pencil{% endif %} me-2"></i>
+            {{ accion }} Proveedor
+          </h4>
+        </div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+              <div class="alert alert-danger">
+                <h6>Por favor corrige los siguientes errores:</h6>
+                {{ form.errors }}
+              </div>
+            {% endif %}
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.nombre.id_for_label }}" class="form-label fw-semibold">Nombre *</label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                  <div class="text-danger small">{{ form.nombre.errors.0 }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.telefono.id_for_label }}" class="form-label fw-semibold">Teléfono</label>
+                {{ form.telefono }}
+                {% if form.telefono.errors %}
+                  <div class="text-danger small">{{ form.telefono.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.correo.id_for_label }}" class="form-label fw-semibold">Correo</label>
+                {{ form.correo }}
+                {% if form.correo.errors %}
+                  <div class="text-danger small">{{ form.correo.errors.0 }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.direccion.id_for_label }}" class="form-label fw-semibold">Dirección</label>
+                {{ form.direccion }}
+                {% if form.direccion.errors %}
+                  <div class="text-danger small">{{ form.direccion.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.pais.id_for_label }}" class="form-label fw-semibold">País</label>
+                {{ form.pais }}
+                {% if form.pais.errors %}
+                  <div class="text-danger small">{{ form.pais.errors.0 }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.ciudad.id_for_label }}" class="form-label fw-semibold">Ciudad</label>
+                {{ form.ciudad }}
+                {% if form.ciudad.errors %}
+                  <div class="text-danger small">{{ form.ciudad.errors.0 }}</div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.comuna.id_for_label }}" class="form-label fw-semibold">Comuna</label>
+                {{ form.comuna }}
+                {% if form.comuna.errors %}
+                  <div class="text-danger small">{{ form.comuna.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'proveedores' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-2"></i>Cancelar
+              </a>
+              <button type="submit" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-check-circle me-2"></i>Guardar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Aplicar clases de Bootstrap a los campos del formulario
+  document.addEventListener('DOMContentLoaded', function() {
+    const formFields = document.querySelectorAll('input, select, textarea');
+    formFields.forEach(field => {
+      field.classList.add('form-control', 'rounded-pill', 'px-3');
+    });
+  });
+</script>
+{% endblock %} 

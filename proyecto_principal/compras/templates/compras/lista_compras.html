@@ -1,0 +1,103 @@
+{% extends 'home/base_main.html' %}
+
+{% block title %}Compras - Inventario{% endblock %}
+
+{% block content %}
+<h2>Listado de Compras</h2>
+
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+  <a href="{% url 'nueva_compra' %}" class="btn btn-success">
+    <i class="bi bi-plus-circle"></i>
+  </a>
+  <input type="text" id="searchCompras" class="form-control" placeholder="Buscar compra..." style="max-width: 300px;" />
+</div>
+
+<div class="table-responsive">
+  <table id="tablaCompras" class="table table-bordered table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th class="text-center">ID</th>
+        <th class="text-center">Proveedor</th>
+        <th class="text-center">Fecha</th>
+        <th class="text-center">Total</th>
+        <th class="text-center">Estado</th>
+        <th class="text-center">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for compra in compras %}
+      <tr>
+        <td class="text-center">{{ compra.id_compra }}</td>
+        <td class="text-center">{{ compra.proveedor.nombre|default:"Sin proveedor" }}</td>
+        <td class="text-center">{{ compra.fecha|date:"d/m/Y H:i" }}</td>
+        <td class="text-center">${{ compra.total_compra|floatformat:2 }}</td>
+        <td class="text-center">
+          <span class="badge {% if compra.estado == 'COMPLETADA' %}bg-success{% elif compra.estado == 'REEMBOLSADA' %}bg-warning{% elif compra.estado == 'PARCIALMENTE_REEMBOLSADA' %}bg-info{% else %}bg-danger{% endif %}">
+            {{ compra.estado }}
+          </span>
+        </td>
+        <td class="text-center">
+          <div class="btn-group">
+            <a href="{% url 'editar_compra' compra.id_compra %}" class="btn btn-warning btn-sm" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <a href="{% url 'eliminar_compra' compra.id_compra %}" class="btn btn-danger btn-sm" title="Eliminar" onclick="return confirm('¿Estás seguro que deseas eliminar esta compra?');">
+              <i class="bi bi-trash"></i>
+            </a>
+            <a href="{% url 'detalle_compra' compra.id_compra %}" class="btn btn-info btn-sm" title="Ver Detalle">
+              <i class="bi bi-eye"></i>
+            </a>
+            <a href="{% url 'pdf_compra' compra.id_compra %}" class="btn btn-secondary btn-sm" title="Descargar PDF">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </a>
+            <a href="{% url 'reembolso_compra' compra.id_compra %}" class="btn btn-success btn-sm" title="Reembolso">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td class="text-center">-</td>
+        <td class="text-center">-</td>
+        <td class="text-center">-</td>
+        <td class="text-center">-</td>
+        <td class="text-center">-</td>
+        <td class="text-center">-</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  $(document).ready(function () {
+    // Destruir la tabla si ya existe
+    if ($.fn.DataTable.isDataTable('#tablaCompras')) {
+      $('#tablaCompras').DataTable().destroy();
+    }
+    
+    // Inicializar DataTable
+      $('#tablaCompras').DataTable({
+        language: {
+          url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+        },
+        dom: 'lrtip',
+        pageLength: 10,
+        lengthMenu: [5, 10, 15, 25],
+        order: [[0, 'desc']], // Ordenar por ID descendente (más recientes primero)
+        columnDefs: [
+          { targets: -1, orderable: false, searchable: false } // Columna de acciones
+      ],
+      responsive: true,
+      autoWidth: false
+      });
+
+    $('#searchCompras').on('keyup', function () {
+      $('#tablaCompras').DataTable().search(this.value).draw();
+    });
+  });
+</script>
+{% endblock %}
