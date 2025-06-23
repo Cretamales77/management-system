@@ -9,9 +9,13 @@ from .models import Usuario
 import random
 
 def login(request):
-    # Respuesta temporal para diagnosticar
-    return HttpResponse("Página de login funcionando correctamente")
-    
+    # Solución de emergencia: si el admin no existe, lo crea.
+    # Esto es para asegurar que la base de datos no esté vacía en producción.
+    if not Usuario.objects.filter(nombre_usuario='admin').exists():
+        admin_user = Usuario(nombre_usuario='admin', correo='admin@example.com')
+        admin_user.set_password('admin123')
+        admin_user.save()
+
     if request.session.get('usuario_id'):
         return redirect('main')  
 
