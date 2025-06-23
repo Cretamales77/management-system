@@ -5,6 +5,11 @@
 {% block title %}Inicio - Inventario{% endblock %}
 
 {% block content %}
+<div style="position: fixed; top: 10px; right: 10px; background: yellow; padding: 5px; z-index: 9999;">
+    DEBUG: Correo en sesión: {{ request.session.correo_usuario }} <br>
+    DEBUG: Correo desde objeto: {{ usuario.correo }}
+</div>
+
 <h1>Últimos Movimientos</h1>
 
 {% if movimientos %}

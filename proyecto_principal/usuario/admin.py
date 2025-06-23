@@ -1,14 +1,14 @@
 from django.contrib import admin
-from django.contrib.auth.hashers import make_password
 from .models import Usuario
 
 class UsuarioAdmin(admin.ModelAdmin):
-    list_display = ('nombre_usuario', 'correo')
+    list_display = ('id_usuario', 'nombre_usuario', 'correo')
+    search_fields = ('nombre_usuario', 'correo')
 
-    def save_model(self, request, obj, form, change):
-        # Solo en caso de que la contraseña esté en texto plano
-        if not obj.contraseña.startswith('pbkdf2_sha256$'):  # verifica si ya está hasheada
-            obj.contraseña = make_password(obj.contraseña)
-        super().save_model(request, obj, form, change)
+    # Excluye el campo 'contraseña' del formulario de edición directa
+    # para evitar problemas de hash. La contraseña se debe cambiar
+    # a través de los mecanismos de Django si fuera el User model.
+    # Para este modelo custom, la lógica de cambio de contraseña está en las vistas.
+    exclude = ('contraseña',)
 
 admin.site.register(Usuario, UsuarioAdmin)
