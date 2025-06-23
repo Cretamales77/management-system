@@ -1,14 +1,32 @@
 from django.contrib import admin
 from .models import Usuario
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
-class UsuarioAdmin(admin.ModelAdmin):
-    list_display = ('id_usuario', 'nombre_usuario', 'correo')
-    search_fields = ('nombre_usuario', 'correo')
+class CustomUserAdmin(UserAdmin):
+    add_form = UserCreationForm
+    form = UserChangeForm
+    model = Usuario
+    list_display = ['nombre_usuario', 'correo']
+    
+    # Define los campos que se mostrarán al añadir un nuevo usuario
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('nombre_usuario', 'correo', 'password', 'password2')}
+        ),
+    )
+    
+    # Define los campos que se mostrarán al editar un usuario existente
+    fieldsets = (
+        (None, {'fields': ('nombre_usuario', 'correo')}),
+    )
 
-    # Excluye el campo 'contraseña' del formulario de edición directa
-    # para evitar problemas de hash. La contraseña se debe cambiar
-    # a través de los mecanismos de Django si fuera el User model.
-    # Para este modelo custom, la lógica de cambio de contraseña está en las vistas.
-    exclude = ('contraseña',)
+# Desregistra el modelo de usuario si ya estaba registrado de forma simple
+try:
+    admin.site.unregister(Usuario)
+except admin.sites.NotRegistered:
+    pass
 
-admin.site.register(Usuario, UsuarioAdmin)
+# Registra el modelo de usuario con la configuración personalizada
+admin.site.register(Usuario, CustomUserAdmin)
