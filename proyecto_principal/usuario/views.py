@@ -7,6 +7,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .models import Usuario
 import random
+import traceback
 
 def login(request):
     # Solución de emergencia: si el admin no existe, lo crea.
@@ -245,6 +246,7 @@ def eliminar_perfil(request, id_usuario):
                 return JsonResponse({'success': True})
             messages.success(request, 'Perfil eliminado exitosamente.')
         except Exception as e:
+            import traceback; print(traceback.format_exc())
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'error': str(e)}, status=500)
             messages.error(request, f'Error al eliminar el perfil: {str(e)}')
