@@ -66,7 +66,7 @@
         </thead>
         <tbody>
           {% for usuario in usuarios %}
-          <tr>
+          <tr id="fila-usuario-{{ usuario.id_usuario }}">
             <td>
               <div class="d-flex align-items-center gap-3">
                 <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
@@ -93,44 +93,15 @@
                   <i class="bi bi-pencil"></i>
                 </a>
                 <button type="button" 
-                        class="btn btn-light btn-sm d-inline-flex align-items-center justify-content-center" 
+                        class="btn btn-light btn-sm d-inline-flex align-items-center justify-content-center btn-eliminar-perfil" 
+                        data-id="{{ usuario.id_usuario }}"
+                        data-nombre="{{ usuario.nombre_usuario }}"
                         data-bs-toggle="modal" 
-                        data-bs-target="#deleteModal{{ usuario.id_usuario }}"
+                        data-bs-target="#deleteModal"
                         title="Eliminar perfil"
                         data-bs-toggle="tooltip">
                   <i class="bi bi-trash text-danger"></i>
                 </button>
-              </div>
-
-              <!-- Modal de confirmación de eliminación -->
-              <div class="modal fade" id="deleteModal{{ usuario.id_usuario }}" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                  <div class="modal-content">
-                    <div class="modal-header border-0">
-                      <div class="d-flex align-items-center gap-3">
-                        <div class="icon-circle bg-danger bg-opacity-10">
-                          <i class="bi bi-exclamation-triangle text-danger"></i>
-                        </div>
-                        <h5 class="modal-title">Confirmar Eliminación</h5>
-                      </div>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                    </div>
-                    <div class="modal-body">
-                      <p class="mb-0">¿Estás seguro que deseas eliminar el perfil de <strong>{{ usuario.nombre_usuario }}</strong>?</p>
-                      <p class="text-muted small mt-2">Esta acción no se puede deshacer.</p>
-                    </div>
-                    <div class="modal-footer border-0">
-                      <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                      <form action="{% url 'eliminar_perfil' usuario.id_usuario %}" method="post" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                          <i class="bi bi-trash me-2"></i>
-                          Eliminar
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
               </div>
             </td>
           </tr>
@@ -152,6 +123,34 @@
     </div>
   </div>
 </div>
+
+<!-- Modal de confirmación de eliminación (solo uno, reutilizable) -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-circle bg-danger bg-opacity-10">
+            <i class="bi bi-exclamation-triangle text-danger"></i>
+          </div>
+          <h5 class="modal-title">Confirmar Eliminación</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">¿Estás seguro que deseas eliminar el perfil de <strong id="nombreUsuarioEliminar"></strong>?</p>
+        <p class="text-muted small mt-2">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">
+          <i class="bi bi-trash me-2"></i>
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -164,7 +163,7 @@
     });
 
     // Inicializar DataTable
-    $('#tablaPerfiles').DataTable({
+    const tabla = $('#tablaPerfiles').DataTable({
       language: {
         url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
       },
@@ -185,7 +184,47 @@
     });
 
     $('#searchPerfiles').on('keyup', function () {
-      $('#tablaPerfiles').DataTable().search(this.value).draw();
+      tabla.search(this.value).draw();
+    });
+
+    // Variables para el modal de eliminación
+    let idUsuarioEliminar = null;
+    let filaUsuario = null;
+
+    // Abrir modal y guardar id
+    $(document).on('click', '.btn-eliminar-perfil', function () {
+      idUsuarioEliminar = $(this).data('id');
+      filaUsuario = $(this).closest('tr');
+      const nombre = $(this).data('nombre');
+      $('#nombreUsuarioEliminar').text(nombre);
+    });
+
+    // Confirmar eliminación por AJAX
+    $('#btnConfirmarEliminar').on('click', function () {
+      if (!idUsuarioEliminar) return;
+      $.ajax({
+        url: `/usuario/perfiles/eliminar/${idUsuarioEliminar}/`,
+        type: 'POST',
+        data: {
+          'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function (data) {
+          // Cerrar modal
+          $('#deleteModal').modal('hide');
+          // Eliminar fila de la tabla
+          tabla.row(filaUsuario).remove().draw();
+          // Mostrar mensaje de éxito
+          $('<div class="alert alert-success alert-dismissible fade show mt-3" role="alert">Perfil eliminado exitosamente.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button></div>').insertBefore('.card');
+        },
+        error: function (xhr) {
+          $('#deleteModal').modal('hide');
+          let mensaje = 'Error al eliminar el perfil.';
+          if (xhr.responseJSON && xhr.responseJSON.error) {
+            mensaje = xhr.responseJSON.error;
+          }
+          $('<div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">' + mensaje + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button></div>').insertBefore('.card');
+        }
+      });
     });
   });
 </script>

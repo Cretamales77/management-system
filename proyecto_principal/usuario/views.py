@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
@@ -216,17 +216,41 @@ def editar_perfil(request, id_usuario):
 
 def eliminar_perfil(request, id_usuario):
     if not request.session.get('usuario_id'):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'No autenticado'}, status=403)
         return redirect('login')
     
     usuario = get_object_or_404(Usuario, id_usuario=id_usuario)
-    
+    total_usuarios = Usuario.objects.count()
+    usuario_actual_id = request.session.get('usuario_id')
+
     if request.method == 'POST':
+        # No permitir borrar el último usuario
+        if total_usuarios <= 1:
+            msg = 'Debe haber al menos un usuario en el sistema.'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('lista_perfiles')
+        # No permitir que un usuario se borre a sí mismo
+        if usuario.id_usuario == usuario_actual_id:
+            msg = 'No puedes borrar tu propio perfil mientras estás logueado.'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': msg}, status=400)
+            messages.error(request, msg)
+            return redirect('lista_perfiles')
         try:
             usuario.delete()
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
             messages.success(request, 'Perfil eliminado exitosamente.')
         except Exception as e:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': str(e)}, status=500)
             messages.error(request, f'Error al eliminar el perfil: {str(e)}')
     
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
     return redirect('lista_perfiles')
 
 
