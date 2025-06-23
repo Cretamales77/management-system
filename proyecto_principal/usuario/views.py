@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
@@ -8,6 +9,9 @@ from .models import Usuario
 import random
 
 def login(request):
+    # Respuesta temporal para diagnosticar
+    return HttpResponse("Página de login funcionando correctamente")
+    
     if request.session.get('usuario_id'):
         return redirect('main')  
 
