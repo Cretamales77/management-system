@@ -5,7 +5,7 @@ class Usuario(models.Model):
     id_usuario = models.AutoField(primary_key=True)
     nombre_usuario = models.CharField(max_length=40, unique=True)
     contraseña = models.CharField(max_length=128)
-    correo = models.EmailField(max_length=254, unique=True, null=True, blank=True)
+    correo = models.EmailField(max_length=254, unique=True)
 
     def set_password(self, raw_password):
         self.contraseña = make_password(raw_password)
