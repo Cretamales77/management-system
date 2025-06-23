@@ -64,8 +64,9 @@
           {% endfor %}
         </ul>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer d-flex justify-content-between align-items-center">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn btn-outline-danger" id="deshabilitarStockBajo">No mostrar más</button>
       </div>
     </div>
   </div>
@@ -73,9 +74,40 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const modal = new bootstrap.Modal(document.getElementById('modalStockBajo'));
-    modal.show();
+    if (!localStorage.getItem('stockBajoDeshabilitado')) {
+      const modal = new bootstrap.Modal(document.getElementById('modalStockBajo'));
+      modal.show();
+    }
+    const btnDeshabilitar = document.getElementById('deshabilitarStockBajo');
+    if (btnDeshabilitar) {
+      btnDeshabilitar.addEventListener('click', function () {
+        localStorage.setItem('stockBajoDeshabilitado', '1');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalStockBajo'));
+        if (modal) modal.hide();
+        mostrarBotonHabilitar();
+      });
+    }
+    mostrarBotonHabilitar();
   });
+  function mostrarBotonHabilitar() {
+    let btn = document.getElementById('habilitarStockBajo');
+    if (localStorage.getItem('stockBajoDeshabilitado')) {
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'habilitarStockBajo';
+        btn.className = 'btn btn-warning mb-3';
+        btn.innerHTML = '<i class="bi bi-bell"></i> Habilitar notificaciones de stock bajo';
+        btn.onclick = function() {
+          localStorage.removeItem('stockBajoDeshabilitado');
+          location.reload();
+        };
+        const h1 = document.querySelector('h1');
+        if (h1) h1.parentNode.insertBefore(btn, h1.nextSibling);
+      }
+    } else {
+      if (btn) btn.remove();
+    }
+  }
 </script>
 {% endif %}
 {% endblock %}
