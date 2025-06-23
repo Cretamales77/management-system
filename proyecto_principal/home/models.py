@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
+from django.conf import settings
 
 # ---------------------- MODELOS DE PRODUCTOS Y CATEGORÍAS ----------------------
 
@@ -45,7 +45,7 @@ class Venta(models.Model):
         ],
         default='COMPLETADA'
     )
-    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"Venta {self.id_venta} - {self.fecha}"
@@ -125,7 +125,7 @@ class DetalleVenta(models.Model):
 class Reembolso(models.Model):
     id_reembolso = models.AutoField(primary_key=True)
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='reembolsos')
-    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     fecha_hora = models.DateTimeField(auto_now_add=True)
     observaciones = models.TextField(blank=True, null=True)
     total_devuelto = models.DecimalField(max_digits=10, decimal_places=2)
@@ -222,7 +222,7 @@ class Compra(models.Model):
         ],
         default='COMPLETADA'
     )
-    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"Compra {self.id_compra} - {self.fecha}"
@@ -302,7 +302,7 @@ class DetalleCompra(models.Model):
 class ReembolsoCompra(models.Model):
     id_reembolso = models.AutoField(primary_key=True)
     compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='reembolsos')
-    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     fecha_hora = models.DateTimeField(auto_now_add=True)
     observaciones = models.TextField(blank=True, null=True)
     total_devuelto = models.DecimalField(max_digits=10, decimal_places=2)

@@ -32,7 +32,7 @@ class UsuarioAdmin(admin.ModelAdmin):
     # Usa el formulario personalizado
     form = UsuarioAdminForm
     
-    list_display = ('id_usuario', 'nombre_usuario', 'correo')
+    list_display = ('nombre_usuario', 'correo', 'is_staff')
     search_fields = ('nombre_usuario', 'correo')
 
     # Define los campos que se mostrarán en el formulario.
