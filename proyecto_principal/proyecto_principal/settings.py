@@ -28,14 +28,7 @@ SECRET_KEY = 'django-insecure-00(4a2#*856p*&k(fa8aj+mv6c0tvs$)jo*u(w9)bdqx#!th!8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
-
-if DEBUG:
-    ALLOWED_HOSTS.append('*')
-else:
-    ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS')
-    if ALLOWED_HOSTS_ENV:
-        ALLOWED_HOSTS.extend(ALLOWED_HOSTS_ENV.split(','))
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -157,10 +150,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Configuración del modelo de usuario personalizado
-AUTH_USER_MODEL = 'usuario.Usuario'
-
 '''
 # Correo de prueba con consola
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

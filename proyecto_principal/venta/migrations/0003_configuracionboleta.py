@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("venta", "0001_initial"),
+        ("venta", "0002_alter_reembolso_usuario"),
     ]
 
     operations = [
