@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import Usuario
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from .forms import UsuarioCreationForm
 
 class CustomUserAdmin(UserAdmin):
     add_form = UserCreationForm
@@ -28,5 +29,29 @@ try:
 except admin.sites.NotRegistered:
     pass
 
-# Registra el modelo de usuario con la configuración personalizada
-admin.site.register(Usuario, CustomUserAdmin)
+@admin.register(Usuario)
+class UsuarioAdmin(admin.ModelAdmin):
+    list_display = ('id_usuario', 'nombre_usuario', 'correo')
+    search_fields = ('nombre_usuario', 'correo')
+
+    # Usa nuestro formulario personalizado solo para la página de "añadir"
+    add_form = UsuarioCreationForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Usa un formulario diferente para crear que para editar.
+        """
+        defaults = {}
+        if obj is None:
+            defaults['form'] = self.add_form
+        defaults.update(kwargs)
+        return super().get_form(request, obj, **defaults)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Asegura que la contraseña se guarde correctamente al crear
+        un nuevo usuario desde el admin.
+        """
+        if not change: # Solo al crear un usuario nuevo
+            obj.set_password(form.cleaned_data["password"])
+        super().save_model(request, obj, form, change)
